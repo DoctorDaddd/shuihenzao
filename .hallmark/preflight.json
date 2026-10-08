@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-08",
+  "framework": "React / Vinext",
+  "source": ["components/Adventure.tsx", "components/PixelWorld.tsx", "components/ChapterScenery.tsx", "styles/quest.css"],
+  "incumbent": "Light sage and paper; Noto web fonts; SVG pixel maps; CSS animation",
+  "user_direction": "Original Dragon Quest inspired JRPG; female hero; native CSS/SVG; local only",
+  "preserved": ["routes", "components", "data", "upload flow", "admin authorization", "reward secrecy"]
+}

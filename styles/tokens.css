@@ -1,0 +1,49 @@
+/* Hallmark · custom JRPG: ink-green command windows, aged brass, field parchment.
+   Pixel geometry and restrained hard bevels belong to the user's game-world brief. */
+@font-face {
+  font-family: "Fusion Pixel";
+  src: url("/fonts/fusion-pixel-12px-zh.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+:root {
+  --night: oklch(20% 0.025 159);
+  --panel: oklch(26% 0.031 159);
+  --panel-raised: oklch(32% 0.037 157);
+  --panel-hover: oklch(38% 0.041 152);
+  --parchment: oklch(91% 0.039 86);
+  --parchment-shade: oklch(85% 0.051 84);
+  --cream: oklch(94% 0.022 86);
+  --quiet: oklch(78% 0.033 99);
+  --brass: oklch(68% 0.080 83);
+  --brass-dark: oklch(48% 0.051 81);
+  --signal: oklch(84% 0.127 83);
+  --deadline-urgent: oklch(80% 0.125 44);
+  --leaf: oklch(75% 0.104 135);
+  --ink-deep: oklch(27% 0.027 150);
+  --ink-soft: oklch(43% 0.028 143);
+  --danger: oklch(45% 0.15 28);
+  --focus: oklch(87% 0.143 90);
+  --shade: oklch(12% 0.02 160 / .48);
+  --veil: oklch(15% 0.025 160 / .78);
+  --paper: var(--parchment);
+  --paper-dark: var(--parchment-shade);
+  --ink: var(--ink-deep);
+  --muted: var(--ink-soft);
+  --green: var(--panel-raised);
+  --green-dark: var(--ink-deep);
+  --line: var(--brass-dark);
+  --gold: var(--brass);
+  --font: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+  --serif: "Fusion Pixel", "Microsoft YaHei", sans-serif;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --dur-short: 180ms;
+}
