@@ -892,7 +892,7 @@ export default function Adventure() {
             />
           </div>
           <p className="audio-now-playing" role="status">
-            {audio.status === 'playing' ? '正在播放' : audio.enabled ? '点击声音按钮开始播放' : '声音已关闭'}
+            {audio.status === 'playing' ? '正在播放' : audio.enabled ? '声音已开启，等待首次点击或按键' : '声音已关闭'}
             {' · '}{THEMES[audio.scene.chapter].name} · {audio.scene.intense ? '激昂乐章' : '舒缓乐章'}
           </p>
           {audio.message && <p className="error" role="alert">{audio.message}</p>}
@@ -901,7 +901,7 @@ export default function Adventure() {
             <label>音效音量 <output>{audio.effectsVolume}%</output><input type="range" min="0" max="100" step="5" aria-label="音效音量" value={audio.effectsVolume} onChange={e => audio.setVolume('effectsVolume', Number(e.target.value))} /></label>
             <button className="text-button" data-sound-control disabled={!audio.enabled} onClick={() => { void audio.unlock().then(() => playSound('chest')); }}>试听宝箱音效</button>
           </div>
-          <p className="small-print">首次开启需轻点声音按钮。切到其他标签页时暂停，回来后继续；静音和音量只影响这台设备。</p>
+          <p className="small-print">声音默认开启，首次点击页面或按键后播放。切到其他标签页时暂停，回来后继续；静音和音量只影响这台设备。</p>
           <div className="preference-row">
             <div>
               <h3>

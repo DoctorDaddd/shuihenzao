@@ -10,8 +10,8 @@ export function useAdventureAudio() {
         const value = localStorage.getItem(key);
         return value === null || !Number.isFinite(Number(value)) ? fallback : Number(value);
       };
-      engine.configure(localStorage.getItem('brush-sound') === 'true', volume('brush-music-volume', 35), volume('brush-effects-volume', 60));
-    } catch (error) { engine.preferenceError(error); }
+      engine.configure(localStorage.getItem('brush-sound') !== 'false', volume('brush-music-volume', 35), volume('brush-effects-volume', 60));
+    } catch (error) { engine.configure(true, 35, 60); engine.preferenceError(error); }
     const activate = (event: Event) => {
       // The explicit sound buttons unlock themselves. A pointerdown must not
       // turn "enable" into "mute" before the same user's click is dispatched.
