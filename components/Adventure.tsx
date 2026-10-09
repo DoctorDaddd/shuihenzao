@@ -11,11 +11,11 @@ import {
   Sparkles,
   LockKeyhole,
   Heart,
-  Sprout,
-  Trees,
+  Shield,
+  Gem,
+  Cog,
   Landmark,
-  MountainSnow,
-  Castle,
+  Orbit,
   Flag,
   Volume2,
   VolumeX,
@@ -62,7 +62,7 @@ const emptyState: QuestState = {
   })),
   letters: [],
 };
-const icons = [Sprout, Trees, Landmark, MountainSnow, Castle];
+const icons = [Shield, Gem, Cog, Landmark, Orbit];
 type Tab = "map" | "gallery" | "compare" | "mail" | "rewards" | "admin";
 export default function Adventure() {
   const [state, setState] = useState<QuestState | null>(null),
@@ -510,9 +510,9 @@ export default function Adventure() {
                     {
                       [
                         "见习画笔勇者",
-                        "森林的绘梦者",
+                        "以太的绘梦者",
                         "符文绘画师",
-                        "雪原的点灯人",
+                        "苍穹的点灯人",
                         "传说画笔勇者",
                       ][currentChapter]
                     }
