@@ -12,7 +12,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/core.test.mjs tests/cloudbase.test.mjs",
+    "test": "node --experimental-strip-types --test tests/core.test.mjs tests/cloudbase.test.mjs tests/session.test.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 5175",
     "test:cloudbase": "node --test tests/cloudbase.test.mjs",
     "cloudbase:config": "node scripts/configure-cloudbase.mjs",

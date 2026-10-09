@@ -106,6 +106,7 @@ export default function Adventure() {
     const body = await getState();
     if (version === refreshVersion.current && mounted.current) {
       setState(body);
+      setError("");
       setView(current => current ? body.artworks.find(a => a.id === current.id) ?? null : null);
     }
     return body;
