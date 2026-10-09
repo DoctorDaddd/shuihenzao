@@ -76,7 +76,6 @@ export default function Adventure() {
     } | null>(null),
     [compareIds, setCompareIds] = useState<string[]>([]);
   const [settings, setSettings] = useState(false),
-    [loginOpen, setLoginOpen] = useState(false),
     [overview, setOverview] = useState(false),
     [letter, setLetter] = useState<Letter | null>(null),
     [reward, setReward] = useState<Reward | null>(null),
@@ -195,7 +194,6 @@ export default function Adventure() {
     window.scrollTo({ top: 0, behavior: reduced ? "instant" : "smooth" });
   }
   function beginUpload() {
-    if (state?.role === "visitor") { setLoginOpen(true); return; }
     if (!state) {
       notify("冒险记录尚未加载，请稍后重试。");
       return;
@@ -258,7 +256,6 @@ export default function Adventure() {
     setReward(r);
   }
   async function revealChest() {
-    if (state?.role === "visitor") { setReward(null); setLoginOpen(true); return; }
     if (!reward || busy) return;
     setBusy(true);
     try {
@@ -278,7 +275,6 @@ export default function Adventure() {
       return;
     }
     setLetter(l);
-    if (state?.role === "visitor") return;
     try {
       await api(`read/${l.id}`);
       await refresh();
@@ -785,7 +781,14 @@ export default function Adventure() {
               }}
             />
           ) : (
-            <AdminLogin onLogin={async () => { const next = await refresh(); if (next.role !== "admin") throw new Error("账号已登录，但未获得冒险发起人权限。"); }} />
+            <AdminLogin onLogin={async () => {
+              const next = await refresh();
+              if (next.role !== "admin") {
+                await signOut();
+                await refresh();
+                throw new Error("这个账号没有管理权限，已返回免登录冒险。");
+              }
+            }} />
           ))}
       </main>
       <footer>
@@ -824,13 +827,6 @@ export default function Adventure() {
           onSaved={saved}
         />
       )}
-      {loginOpen && <Modal title="勇者账号" onClose={() => setLoginOpen(false)}>
-        <AdminLogin admin={false} onLogin={async () => {
-          const next = await refresh();
-          if (next.role === "visitor") throw new Error("账号已登录，请联系发起人授予勇者权限。");
-          setLoginOpen(false); notify("欢迎回来，冒险已同步。");
-        }} />
-      </Modal>}
       {view && !upload && (
         <ArtworkViewer
           artwork={view}
@@ -908,8 +904,8 @@ export default function Adventure() {
             />
           </div>
           <div className="account-info">
-            <p>{state?.role === "admin" ? "当前身份：冒险发起人" : state?.role === "hero" ? "勇者已登录 · 画作跨设备同步" : "访客浏览 · 登录后继续冒险"}</p>
-            {state && state.role !== "visitor" ? <button className="text-button" disabled={busy} onClick={() => void logout()}>退出账号</button> : <button className="text-button" onClick={() => { setSettings(false); setLoginOpen(true); }}>登录勇者账号</button>}
+            <p>{state?.role === "admin" ? "当前身份：冒险发起人" : "共享冒险 · 打开就能继续，画作自动同步"}</p>
+            {state?.role === "admin" && <button className="text-button" disabled={busy} onClick={() => void logout()}>退出管理</button>}
           </div>
           <p className="small-print">
             偏好只记录在当前设备。正式作品、宝箱和信件的状态保存在云端。

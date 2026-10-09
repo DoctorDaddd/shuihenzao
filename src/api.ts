@@ -25,7 +25,8 @@ export async function login(username: string, password: string) {
 export async function logout() {
   if (localPreview) return questApi('logout');
   const { cloud } = await import('./cloudbase');
-  await cloud.auth.signOut();
+  const result = await cloud.auth.signOut();
+  if (result && 'error' in result && result.error) throw new Error('退出管理未完成，请稍后重试。');
 }
 export const getState = () => questApi<QuestState>('state');
 export async function saveArtwork(data: FormData, artwork: Artwork | undefined, node: number) {

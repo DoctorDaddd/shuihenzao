@@ -20,8 +20,8 @@ test('真实 SDK 首次访问无凭据时仍会进入访客登录流程', async 
   assert.equal(signIns, 1);
 });
 
-test('空会话建立访客身份；已有勇者会话不会被替换', async () => {
-  for (const session of [null, { user: { id: 'hero', is_anonymous: false } }]) {
+test('空会话自动建立访客身份；已有管理员会话不会被替换', async () => {
+  for (const session of [null, { user: { id: 'admin', is_anonymous: false } }]) {
     let signIns = 0;
     await restoreSession({
       getSession: async () => ({ data: { session }, error: null }),
@@ -47,6 +47,6 @@ test('访客登录被禁用或未返回会话时不能继续加载云端数据',
     await assert.rejects(restoreSession({
       getSession: async () => ({ data: { session: null }, error: { code: 'unauthenticated' } }),
       signInAnonymously: async () => result,
-    }), e => result.error ? e.cause === error : /未能建立/.test(e.message));
+    }), e => result.error ? e.cause === error : /未能连接/.test(e.message));
   }
 });

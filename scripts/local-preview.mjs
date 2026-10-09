@@ -20,7 +20,7 @@ export function localPreview() {
     try { db = JSON.parse(await readFile(stateFile, 'utf8')); }
     catch (e) {
       if (e.code !== 'ENOENT') throw e;
-      db = { quest_state: { main: initialState() }, quest_roles: { 'local-hero': { active: true, role: 'hero' }, 'local-admin': { active: true, role: 'admin' } } };
+      db = { quest_state: { main: initialState() }, quest_roles: { 'local-admin': { active: true, role: 'admin' } } };
       await writeFile(stateFile, JSON.stringify(db));
     }
     let queue = Promise.resolve();
@@ -76,7 +76,8 @@ export function localPreview() {
         const bytes = Buffer.concat(chunks);
         if (url.pathname === '/__local/upload' && req.method === 'PUT') {
           const path = url.searchParams.get('path');
-          if (user.anonymous || !path?.startsWith(`staging/${uid}/`)) throw new QuestError('请先登录本地测试账号。');
+          if (!path?.startsWith(`staging/${uid}/`)) throw new QuestError('文件不属于本次上传。');
+          await service.authorizeUpload(user, path, bytes.length);
           await mkdir(resolve(filePath(path), '..'), { recursive: true }); await writeFile(filePath(path), bytes);
           json({ data: { fileID: path }, error: null }); return;
         }
@@ -84,7 +85,7 @@ export function localPreview() {
         let data;
         if (event.path === 'login') {
           const password = Buffer.from(String(event.body?.password ?? '')), expected = Buffer.from(credentials.password);
-          if (!['hero', 'admin'].includes(event.body?.username) || password.length !== expected.length || !timingSafeEqual(password, expected)) throw new QuestError('本地测试账号或密码错误。');
+          if (event.body?.username !== 'admin' || password.length !== expected.length || !timingSafeEqual(password, expected)) throw new QuestError('本地管理员账号或密码错误。');
           const token = randomBytes(32).toString('base64url'); sessions.set(token, { uid: `local-${event.body.username}`, expires: Date.now() + 8 * 3600000 });
           res.setHeader('Set-Cookie', `quest_local=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800`); data = { ok: true };
         } else if (event.path === 'logout') {

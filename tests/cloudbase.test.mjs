@@ -32,10 +32,12 @@ function fixture() {
   async function prepare(n, extra = {}, user = hero) {
     const bytes = await sharp({ create: { width: 10, height: 10, channels: 3, background: { r: n, g: 50, b: 90 } } }).png().toBuffer();
     const input = { request_id: randomUUID(), expectedNode: n, sha256: hash(bytes), size: bytes.length, type: 'image/png', ...extra };
-    const ticket = await api('prepare', input, user); files.set(ticket.cloudPath, bytes);
+    const ticket = await api('prepare', input, user);
+    await service.authorizeUpload(user, ticket.cloudPath, bytes.length);
+    files.set(ticket.cloudPath, bytes);
     return { ticket, input, finish: () => api('complete', { ticketId: ticket.ticketId, fileID: ticket.cloudPath }, user) };
   }
-  return { api, prepare, data: () => data, store, files };
+  return { api, prepare, authorizeUpload: service.authorizeUpload, data: () => data, store, files };
 }
 test('新环境为 0/25；金额、未解锁信件和草稿不会泄漏给访客或勇者', async () => {
   const f = fixture(), s = await f.api('state', {}, visitor);
@@ -44,16 +46,71 @@ test('新环境为 0/25；金额、未解锁信件和草稿不会泄漏给访客
   assert.equal((await f.api('state')).letters.length, 6);
   const a = await f.api('state', {}, admin); assert.equal(a.letters.length, 7); assert(a.rewards.every(r => r.amount === null));
 });
-test('匿名、未授权和伪造身份均不能写入；已撤销角色立即失效', async () => {
+test('未授权实名账号和伪造请求角色不能写入；已撤销角色立即失效', async () => {
   const f = fixture();
-  for (const user of [visitor, { uid: 'stranger', anonymous: false }, { uid: 'admin', anonymous: true }]) {
-    for (const path of ['prepare', 'open/3', 'letter-save', 'payment/3', 'backup', 'artworks/fake']) await assert.rejects(f.api(path, { uid: 'admin', role: 'admin' }, user), e => e.code === 'FORBIDDEN');
-  }
+  const stranger = { uid: 'stranger', anonymous: false };
+  for (const path of ['prepare', 'open/3', 'letter-save', 'payment/3', 'backup', 'artworks/fake']) await assert.rejects(f.api(path, { uid: 'admin', role: 'admin' }, stranger), e => e.code === 'FORBIDDEN');
   await assert.rejects(f.api('state', {}, { uid: '' }), e => e.code === 'UNAUTHENTICATED');
   await assert.rejects(f.api('letter-save', {}, hero), e => e.code === 'FORBIDDEN');
   await f.store.transaction(tx => tx.set('quest_roles', 'hero', { role: 'hero', active: false }));
   assert.equal((await f.api('state')).role, 'visitor');
   await assert.rejects(f.api('open/3'), e => e.code === 'FORBIDDEN');
+});
+test('打开即用：不同匿名设备共享上传、编辑、开箱和读信进度', async () => {
+  const f = fixture(), second = { uid: 'second-device', anonymous: true };
+  assert.equal((await f.api('state', {}, visitor)).role, 'hero');
+  for (const n of [1,2,3]) await (await f.prepare(n, {}, visitor)).finish();
+  let s = await f.api('state', {}, second);
+  assert.equal(s.artworks.length, 3); assert.equal(s.rewards[0].amount, null);
+  await f.api('open/3', {}, second);
+  await f.api('read/welcome-3', {}, second);
+  const art = s.artworks.at(-1);
+  await f.api('artworks/' + art.id, { version: art.version, title: '另一台设备的记录' }, second);
+  s = await f.api('state', {}, visitor);
+  assert.equal(s.rewards[0].amount, 100); assert(s.letters[0].read_at);
+  assert.equal(s.artworks.at(-1).title, '另一台设备的记录');
+  await assert.rejects(f.api('artworks/' + s.artworks[0].id, {}, second, 'DELETE'));
+  await f.api('artworks/' + art.id, {}, second, 'DELETE');
+  s = await f.api('state', {}, visitor);
+  assert.equal(s.artworks.length, 2); assert.equal(s.rewards[0].amount, 100);
+  assert.equal(Object.values(f.data().quest_archive).length, 1);
+});
+test('自动访客即使匹配管理员 UID，也不能写信、导入历史、登记发放或导出备份', async () => {
+  const f = fixture(), users = [visitor, { uid: 'admin', anonymous: true }];
+  for (const user of users) {
+    assert.equal((await f.api('state', {}, user)).role, 'hero');
+    await assert.rejects(f.prepare(1, { historical: true, created_date: '2026-09-01' }, user), e => e.code === 'FORBIDDEN');
+    for (const path of ['letter-save', 'backup']) await assert.rejects(f.api(path, { uid: 'admin', role: 'admin' }, user), e => e.code === 'FORBIDDEN');
+  }
+  for (const n of [1,2,3]) await (await f.prepare(n, {}, visitor)).finish();
+  await f.api('open/3', {}, visitor);
+  for (const user of users) await assert.rejects(f.api('payment/3', { date: '2026-10-09' }, user), e => e.code === 'FORBIDDEN');
+});
+test('访客只能上传自己当前有效票据的文件；提交后关闭授权，过期或其他路径被拒绝', async () => {
+  const f = fixture(), denied = e => e.code === 'FORBIDDEN';
+  await assert.rejects(f.authorizeUpload(visitor, 'staging/visitor/arbitrary', 10), denied);
+  const p = await f.prepare(1, {}, visitor), path = p.ticket.cloudPath, size = p.input.size;
+  await f.authorizeUpload(visitor, path, size);
+  await assert.rejects(f.authorizeUpload(visitor, path, size + 1), denied);
+  await assert.rejects(f.authorizeUpload(visitor, 'artworks/forged/original', size), denied);
+  await assert.rejects(f.authorizeUpload({ uid: 'other', anonymous: true }, path, size), denied);
+  await f.store.transaction(async tx => {
+    const grant = await tx.get('quest_uploads', 'grant-visitor');
+    await tx.set('quest_uploads', 'grant-visitor', { ...grant, expires: 0 });
+  });
+  await assert.rejects(f.authorizeUpload(visitor, path, size), denied);
+  await f.api('prepare', p.input, visitor);
+  await f.authorizeUpload(visitor, path, size);
+  await p.finish();
+  await assert.rejects(f.authorizeUpload(visitor, path, size), denied);
+});
+test('新票据替换上传授权；较早上传的完成回调不会关闭新票据', async () => {
+  const f = fixture(), first = await f.prepare(1, {}, visitor), newer = await f.prepare(2, { expectedNode: 1 }, visitor);
+  await assert.rejects(f.authorizeUpload(visitor, first.ticket.cloudPath, first.input.size), e => e.code === 'FORBIDDEN');
+  await first.finish();
+  await f.authorizeUpload(visitor, newer.ticket.cloudPath, newer.input.size);
+  await assert.rejects(newer.finish(), e => e.code === 'CONFLICT');
+  assert.equal((await f.api('state', {}, visitor)).artworks.length, 1);
 });
 test('真实图片导入两张后为 2/25，第三张解锁 100 元，开启前隐藏金额', async () => {
   const f = fixture();

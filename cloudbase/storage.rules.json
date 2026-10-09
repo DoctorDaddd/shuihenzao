@@ -1,4 +1,4 @@
 {
   "read": false,
-  "write": "auth != null && auth.loginType != 'ANONYMOUS' && resource.openid == auth.uid && /^staging\\//.test(resource.path) && get(`database.quest_roles.${auth.uid}`).active == true && (get(`database.quest_roles.${auth.uid}`).role == 'hero' || get(`database.quest_roles.${auth.uid}`).role == 'admin')"
+  "write": "auth != null && resource.openid == auth.uid && /^staging\\//.test(resource.path) == true && get(`database.quest_uploads.grant-${auth.uid}`).active == true && get(`database.quest_uploads.grant-${auth.uid}`).expires > now && get(`database.quest_uploads.grant-${auth.uid}`).cloudPath == resource.path && (auth.loginType == 'ANONYMOUS' || (get(`database.quest_roles.${auth.uid}`).active == true && (get(`database.quest_roles.${auth.uid}`).role == 'hero' || get(`database.quest_roles.${auth.uid}`).role == 'admin')))"
 }

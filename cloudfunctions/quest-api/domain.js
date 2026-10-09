@@ -27,8 +27,10 @@ function initialState() {
     letters: config.milestones.map(r => ({ id: `welcome-${r.node}`, node: r.node, title: r.name + ' · 给勇者的信', body: `亲爱的画笔勇者：\n\n谢谢你为这个世界留下第 ${r.node} 份色彩。每一次尝试，都值得被好好珍藏。\n\n不必着急，也不必和任何人比较。无论过去多久，这片世界都欢迎你回来。\n\n—— 一直为你加油的人`, published: 1, read_at: null })),
   };
 }
-const roleOf = (record, user) => !user.anonymous && record?.active === true && ['hero', 'admin'].includes(record.role) ? record.role : 'visitor';
-const writable = role => { if (!['hero', 'admin'].includes(role)) fail('请使用已获授权的勇者账号登录。', 'FORBIDDEN'); };
+// The shared adventure is open to automatic guest sessions. Admin rights never
+// come from an anonymous identity, even if its UID matches a role document.
+const roleOf = (record, user) => user.anonymous ? 'hero' : record?.active === true && ['hero', 'admin'].includes(record.role) ? record.role : 'visitor';
+const writable = role => { if (!['hero', 'admin'].includes(role)) fail('当前会话无法修改冒险，请退出管理后重试。', 'FORBIDDEN'); };
 const admin = role => { if (role !== 'admin') fail('这项操作需要冒险发起人权限。', 'FORBIDDEN'); };
 const letterUnlocked = (s, l) => s.artworks.length >= l.node || !!l.read_at || s.rewards.some(r => r.node === l.node && r.unlocked_at);
 function publicState(s, role, uid) {
@@ -43,12 +45,22 @@ function publicState(s, role, uid) {
 // Split collections only if this becomes a multi-adventure product.
 function createService(store, storage) {
   async function transaction(user, callback) {
-    if (!user?.uid) fail('请先建立登录会话。', 'UNAUTHENTICATED');
+    if (!user?.uid) fail('冒险连接已失效，请刷新后重试。', 'UNAUTHENTICATED');
     return store.transaction(async tx => {
       const role = roleOf(await tx.get('quest_roles', user.uid), user);
       const state = await tx.get('quest_state', 'main');
       if (!state) fail('冒险环境尚未初始化，请联系冒险发起人。', 'NOT_INITIALIZED');
       return callback(tx, state, role);
+    });
+  }
+  async function allowUpload(tx, uid, ticketId, ticket) {
+    await tx.set('quest_uploads', `grant-${uid}`, { ticketId, cloudPath: ticket.cloudPath, size: ticket.size, expires: ticket.expires, active: true });
+  }
+  async function authorizeUpload(user, cloudPath, size) {
+    return transaction(user, async (tx, _state, role) => {
+      writable(role);
+      const grant = await tx.get('quest_uploads', `grant-${user.uid}`);
+      if (!grant?.active || grant.expires <= Date.now() || grant.cloudPath !== cloudPath || grant.size !== size) fail('本次上传已失效，请重新选择图片。', 'FORBIDDEN');
     });
   }
   async function handle(user, event) {
@@ -73,6 +85,7 @@ function createService(store, storage) {
         if (previous) {
           if (previous.fingerprint !== fingerprint) fail('这次上传的信息已改变，请重新选择图片后提交。', 'CONFLICT');
           if (!previous.committed && previous.expires < Date.now()) fail('上传已过期，请重新选择图片。', 'EXPIRED');
+          if (!previous.committed) await allowUpload(tx, user.uid, ticketId, previous);
           return { ticketId, cloudPath: previous.cloudPath, committed: !!previous.committed };
         }
         const art = input.artworkId ? state.artworks.find(a => a.id === input.artworkId) : null;
@@ -82,7 +95,9 @@ function createService(store, storage) {
         if (input.historical) { admin(role); if (art || state.artworks.length >= 2 || !input.created_date) fail('历史导入仅用于前两张作品，请填写实际日期。'); }
         if (state.artworks.some(a => a.sha256 === input.sha256 && a.id !== art?.id)) fail('这张画已经珍藏过了，请选择另一张作品。', 'DUPLICATE');
         const cloudPath = `staging/${user.uid}/${ticketId}/original`;
-        await tx.set('quest_uploads', ticketId, { uid: user.uid, fingerprint, cloudPath, expires: Date.now() + 3600000, artworkId: art?.id ?? null, version: art?.version ?? null, expectedNode: state.artworks.length + 1, historical: !!input.historical, fields: fields(input, art?.node ?? state.artworks.length + 1), sha256: input.sha256, size: input.size, type: input.type, committed: false });
+        const ticket = { uid: user.uid, fingerprint, cloudPath, expires: Date.now() + 3600000, artworkId: art?.id ?? null, version: art?.version ?? null, expectedNode: state.artworks.length + 1, historical: !!input.historical, fields: fields(input, art?.node ?? state.artworks.length + 1), sha256: input.sha256, size: input.size, type: input.type, committed: false };
+        await tx.set('quest_uploads', ticketId, ticket);
+        await allowUpload(tx, user.uid, ticketId, ticket);
         return { ticketId, cloudPath, committed: false };
       });
     }
@@ -115,6 +130,8 @@ function createService(store, storage) {
         state.revision++;
         await tx.set('quest_state', 'main', state);
         await tx.set('quest_uploads', input.ticketId, { ...current, committed: true, artworkId: saved.id });
+        const grant = await tx.get('quest_uploads', `grant-${user.uid}`);
+        if (grant?.ticketId === input.ticketId) await tx.set('quest_uploads', `grant-${user.uid}`, { ...grant, active: false });
         return { ok: true, id: saved.id };
       });
     }
@@ -155,6 +172,6 @@ function createService(store, storage) {
       return { ok: true };
     });
   }
-  return { handle };
+  return { handle, authorizeUpload };
 }
 module.exports = { createService, initialState, config, QuestError, hash };
