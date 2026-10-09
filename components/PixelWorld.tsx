@@ -169,6 +169,7 @@ export default function PixelWorld({
   chapter,
   count,
   artworks,
+  rewardNodes,
   onNode,
   onHover,
   onLeave,
@@ -177,6 +178,7 @@ export default function PixelWorld({
   chapter: number;
   count: number;
   artworks: Artwork[];
+  rewardNodes: number[];
   onNode: (node: number) => void;
   onHover: (art: Artwork, rect: DOMRect) => void;
   onLeave: () => void;
@@ -445,7 +447,7 @@ export default function PixelWorld({
         const done = node <= count;
         const current = node === count || (count === 0 && node === 1);
         const next = node === count + 1;
-        const chest = [3, 5, 10, 15, 20, 25].includes(node);
+        const chest = rewardNodes.includes(node);
         return (
           <div
             key={node}

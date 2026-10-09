@@ -1,0 +1,10 @@
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { initialState } = require('../cloudfunctions/quest-api/domain.js');
+const deploy = JSON.parse(await readFile(new URL('../cloudbaserc.json', import.meta.url), 'utf8'));
+const env = process.env.VITE_CLOUDBASE_ENV_ID || deploy.envId;
+if (!/^[a-z0-9-]+$/.test(env)) throw new Error('环境 ID 无效。');
+await mkdir('.local', { recursive: true });
+await writeFile('.local/cloudbase-initial-state.json', JSON.stringify({ _id: 'main', ...initialState() }, null, 2));
+console.log(JSON.stringify({ envId: env, region: 'ap-shanghai', initialProgress: '0/25', consoleImport: '.local/cloudbase-initial-state.json', publishableKeyRequired: false }, null, 2));

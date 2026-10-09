@@ -31,6 +31,7 @@ import { Gallery, ArtworkViewer, Compare } from "./Collection";
 import Admin from "./Admin";
 import AdminLogin from "./AdminLogin";
 import QuestCountdown from "./QuestCountdown";
+import { getState, questApi, logout as signOut, localPreview } from "../src/api";
 import {
   CHAPTERS,
   REWARD_STAGES,
@@ -43,7 +44,7 @@ import {
 } from "../lib/quest";
 
 const emptyState: QuestState = {
-  role: "hero",
+  role: "visitor",
   artworks: [],
   rewards: REWARD_STAGES.map((reward) => ({
     ...reward,
@@ -75,6 +76,7 @@ export default function Adventure() {
     } | null>(null),
     [compareIds, setCompareIds] = useState<string[]>([]);
   const [settings, setSettings] = useState(false),
+    [loginOpen, setLoginOpen] = useState(false),
     [overview, setOverview] = useState(false),
     [letter, setLetter] = useState<Letter | null>(null),
     [reward, setReward] = useState<Reward | null>(null),
@@ -87,7 +89,8 @@ export default function Adventure() {
     [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
-    mounted = useRef(false);
+    mounted = useRef(false),
+    refreshVersion = useRef(0);
   const data = state ?? emptyState,
     count = data.artworks.length,
     currentChapter = chapterFor(count),
@@ -99,11 +102,13 @@ export default function Adventure() {
       .filter((r) => r.paid_at)
       .reduce((n, r) => n + (r.amount ?? 0), 0);
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/quest/state", { cache: "no-store" }),
-      body = (await res.json()) as QuestState & { error?: string };
-    if (!res.ok) throw new Error(body.error || "冒险记录暂时未能读取。");
-    setState(body);
-    return body as QuestState;
+    const version = ++refreshVersion.current;
+    const body = await getState();
+    if (version === refreshVersion.current && mounted.current) {
+      setState(body);
+      setView(current => current ? body.artworks.find(a => a.id === current.id) ?? null : null);
+    }
+    return body;
   }, []);
   useEffect(() => {
     mounted.current = true;
@@ -124,6 +129,13 @@ export default function Adventure() {
       if (toastTimer.current) clearTimeout(toastTimer.current);
       if (previewTimer.current) clearTimeout(previewTimer.current);
     };
+  }, [refresh]);
+  useEffect(() => {
+    const sync = () => { if (document.visibilityState === "visible") void refresh().catch(e => setError(e.message)); };
+    window.addEventListener("focus", sync);
+    window.addEventListener("storage", sync);
+    const timer = setInterval(sync, 60000);
+    return () => { window.removeEventListener("focus", sync); window.removeEventListener("storage", sync); clearInterval(timer); };
   }, [refresh]);
   useEffect(() => {
     document.documentElement.dataset.reduced = String(reduced);
@@ -155,21 +167,16 @@ export default function Adventure() {
     setTimeout(() => void context.close(), 800);
   }
   async function api(path: string, body?: unknown) {
-    const res = await fetch("/api/quest/" + path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body ?? {}),
-    });
-    const result = (await res.json()) as { error?: string };
-    if (!res.ok) throw new Error(result.error || "操作未完成，请重试。");
-    return result;
+    return questApi(path, body);
   }
   async function logout() {
     setBusy(true);
     try {
-      await api("admin-logout");
+      await signOut();
+      refreshVersion.current++;
       // Discard privileged letters immediately, even if the following refresh fails.
       setState(null);
+      setUpload(null); setLetter(null); setView(null); setReward(null);
       setSettings(false);
       navigate("map");
       await refresh();
@@ -187,6 +194,7 @@ export default function Adventure() {
     window.scrollTo({ top: 0, behavior: reduced ? "instant" : "smooth" });
   }
   function beginUpload() {
+    if (state?.role === "visitor") { setLoginOpen(true); return; }
     if (!state) {
       notify("冒险记录尚未加载，请稍后重试。");
       return;
@@ -249,6 +257,7 @@ export default function Adventure() {
     setReward(r);
   }
   async function revealChest() {
+    if (state?.role === "visitor") { setReward(null); setLoginOpen(true); return; }
     if (!reward || busy) return;
     setBusy(true);
     try {
@@ -268,6 +277,7 @@ export default function Adventure() {
       return;
     }
     setLetter(l);
+    if (state?.role === "visitor") return;
     try {
       await api(`read/${l.id}`);
       await refresh();
@@ -279,11 +289,7 @@ export default function Adventure() {
     if (!view || busy) return;
     setBusy(true);
     try {
-      const response = await fetch("/api/quest/artworks/" + view.id, {
-          method: "DELETE",
-        }),
-        body = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(body.error);
+      await questApi("artworks/" + view.id, {}, "DELETE");
       await refresh();
       setConfirmDelete(false);
       setView(null);
@@ -357,6 +363,7 @@ export default function Adventure() {
         ))}
       </nav>
       <main className="main-content">
+        {localPreview && <p className="small-print" role="status">本地预览 · 测试记录仅保存在这台电脑，不会写入正式环境。</p>}
         {error && (
           <div className="error-banner" role="alert">
             <span>{error}</span>
@@ -431,6 +438,7 @@ export default function Adventure() {
                   chapter={chapter}
                   count={count}
                   artworks={data.artworks}
+                  rewardNodes={data.rewards.map(r => r.node)}
                   moving={moving}
                   onHover={hover}
                   onLeave={leave}
@@ -595,7 +603,7 @@ export default function Adventure() {
                       }
                       onMouseLeave={leave}
                     >
-                      <img src={art.imageUrl} alt={art.title} />
+                      <img src={art.thumbnailUrl || art.imageUrl} alt={art.title} loading="lazy" decoding="async" />
                       <div>
                         <span>
                           ADVENTURE {String(art.node).padStart(2, "0")}
@@ -658,11 +666,11 @@ export default function Adventure() {
             <div className="page-title">
               <div>
                 <h1>旅途中的宝藏</h1>
-                <p>六份小惊喜，留到亲手开启时再揭晓。</p>
+                <p>每份小惊喜，留到亲手开启时再揭晓。</p>
               </div>
               <div className="reward-total">
                 <small>已开启宝箱</small>
-                <strong>{data.rewards.filter((r) => r.opened_at).length} / 6</strong>
+                <strong>{data.rewards.filter((r) => r.opened_at).length} / {data.rewards.length}</strong>
               </div>
             </div>
             <div className="reward-summary">
@@ -776,7 +784,7 @@ export default function Adventure() {
               }}
             />
           ) : (
-            <AdminLogin onLogin={async () => { await refresh(); }} />
+            <AdminLogin onLogin={async () => { const next = await refresh(); if (next.role !== "admin") throw new Error("账号已登录，但未获得冒险发起人权限。"); }} />
           ))}
       </main>
       <footer>
@@ -793,7 +801,7 @@ export default function Adventure() {
       </footer>
       {preview && (
         <div className="art-hover" style={{ left: preview.x, top: preview.y }}>
-          <img src={preview.art.imageUrl} alt={preview.art.title} />
+          <img src={preview.art.thumbnailUrl || preview.art.imageUrl} alt={preview.art.title} decoding="async" />
           <div>
             <b>{preview.art.title}</b>
             <span>{preview.art.created_date}</span>
@@ -815,10 +823,18 @@ export default function Adventure() {
           onSaved={saved}
         />
       )}
+      {loginOpen && <Modal title="勇者账号" onClose={() => setLoginOpen(false)}>
+        <AdminLogin admin={false} onLogin={async () => {
+          const next = await refresh();
+          if (next.role === "visitor") throw new Error("账号已登录，请联系发起人授予勇者权限。");
+          setLoginOpen(false); notify("欢迎回来，冒险已同步。");
+        }} />
+      </Modal>}
       {view && !upload && (
         <ArtworkViewer
           artwork={view}
           artworks={data.artworks}
+          canEdit={state?.role === "admin" || state?.role === "hero"}
           onClose={() => setView(null)}
           onSelect={setView}
           onEdit={() => setUpload({ artwork: view })}
@@ -891,8 +907,8 @@ export default function Adventure() {
             />
           </div>
           <div className="account-info">
-            <p>{state?.role === "admin" ? "当前身份：冒险发起人" : "共享冒险 · 无需登录即可出发"}</p>
-            {state?.role === "admin" && <button className="text-button" disabled={busy} onClick={() => void logout()}>退出管理</button>}
+            <p>{state?.role === "admin" ? "当前身份：冒险发起人" : state?.role === "hero" ? "勇者已登录 · 画作跨设备同步" : "访客浏览 · 登录后继续冒险"}</p>
+            {state && state.role !== "visitor" ? <button className="text-button" disabled={busy} onClick={() => void logout()}>退出账号</button> : <button className="text-button" onClick={() => { setSettings(false); setLoginOpen(true); }}>登录勇者账号</button>}
           </div>
           <p className="small-print">
             偏好只记录在当前设备。正式作品、宝箱和信件的状态保存在云端。
@@ -931,7 +947,7 @@ export default function Adventure() {
                           }}
                         >
                           <span>{n <= count ? "✓" : n}</span>
-                          {REWARD_STAGES.some((r) => r.node === n) && <Chest />}
+                          {data.rewards.some((r) => r.node === n) && <Chest />}
                         </button>
                       );
                     })}

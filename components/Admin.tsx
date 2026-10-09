@@ -4,6 +4,7 @@ import { Upload, Mail, ShieldCheck, Download, Plus } from "lucide-react";
 import type { QuestState, Letter, Reward } from "../lib/quest";
 import { localDate, rewardState } from "../lib/quest";
 import Modal from "./Modal";
+import { downloadBackup } from "../src/api";
 type Api = (path: string, body?: unknown) => Promise<unknown>;
 export default function Admin({
   state,
@@ -193,15 +194,14 @@ export default function Admin({
           保存冒险记录
         </h2>
         <p>
-          导出作品信息、奖励历史和信件。此导出不含原图；原图可在作品详情中逐张下载。完整图片备份与恢复将在后续阶段提供。
+          导出作品信息、奖励历史和信件。此导出不含原图；包含原图和缩略图的完整备份请按项目 README 操作。
         </p>
-        <a
-          href="/api/quest/backup"
-          download="brush-quest-metadata.json"
+        <button
+          onClick={() => { void downloadBackup().catch(e => setError(e.message)); }}
           className="secondary"
         >
           导出元数据备份
-        </a>
+        </button>
       </section>
       {letter && (
         <Modal

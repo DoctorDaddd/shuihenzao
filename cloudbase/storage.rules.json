@@ -1,0 +1,4 @@
+{
+  "read": false,
+  "write": "auth != null && auth.loginType != 'ANONYMOUS' && resource.openid == auth.uid && /^staging\\//.test(resource.path) && get(`database.quest_roles.${auth.uid}`).active == true && (get(`database.quest_roles.${auth.uid}`).role == 'hero' || get(`database.quest_roles.${auth.uid}`).role == 'admin')"
+}

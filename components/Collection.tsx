@@ -98,7 +98,7 @@ export function Gallery({
               {art ? (
                 <>
                   <div className="art-image">
-                    <img src={art.imageUrl} alt={art.title} loading="lazy" />
+                    <img src={art.thumbnailUrl || art.imageUrl} alt={art.title} loading="lazy" decoding="async" />
                   </div>
                   <div className="art-label">
                     <strong>{art.title}</strong>
@@ -138,6 +138,7 @@ export function ArtworkViewer({
   onSelect,
   onEdit,
   onDelete,
+  canEdit = true,
 }: {
   artwork: Artwork;
   artworks: Artwork[];
@@ -145,6 +146,7 @@ export function ArtworkViewer({
   onSelect: (a: Artwork) => void;
   onEdit: () => void;
   onDelete: () => void;
+  canEdit?: boolean;
 }) {
   const [zoom, setZoom] = useState(1);
   const index = artworks.findIndex((a) => a.id === artwork.id);
@@ -219,11 +221,11 @@ export function ArtworkViewer({
           <Download size={16} />
           保存图片
         </a>
-        <button className="secondary" onClick={onEdit}>
+        {canEdit && <button className="secondary" onClick={onEdit}>
           <Pencil size={15} />
           编辑作品
-        </button>
-        {index === artworks.length - 1 && (
+        </button>}
+        {canEdit && index === artworks.length - 1 && (
           <button className="danger-button" onClick={onDelete}>
             <Trash2 size={15} />
             删除最后一张

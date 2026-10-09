@@ -69,6 +69,8 @@ export interface Artwork {
   note: string;
   uploaded_at: string;
   imageUrl: string;
+  thumbnailUrl?: string;
+  version?: number;
 }
 export interface Reward {
   node: number;
@@ -89,7 +91,9 @@ export interface Letter {
   unlocked?: boolean;
 }
 export interface QuestState {
-  role: "admin" | "hero";
+  role: "admin" | "hero" | "visitor";
+  uid?: string;
+  revision?: number;
   artworks: Artwork[];
   rewards: Reward[];
   letters: Letter[];

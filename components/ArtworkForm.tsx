@@ -4,6 +4,7 @@ import { ImagePlus, Upload, Sparkles } from "lucide-react";
 import Modal from "./Modal";
 import type { Artwork } from "../lib/quest";
 import { localDate } from "../lib/quest";
+import { saveArtwork } from "../src/api";
 export default function ArtworkForm({
   artwork,
   historical,
@@ -61,12 +62,7 @@ export default function ArtworkForm({
       if (file) data.set("image", file);
       data.set("request_id", requestId.current);
       if (historical) data.set("historical", "true");
-      const res = await fetch(
-        `/api/quest/artworks${artwork ? "/" + artwork.id : ""}`,
-        { method: "POST", body: data },
-      );
-      const body = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(body.error);
+      await saveArtwork(data, artwork, node);
       await onSaved(!artwork);
     } catch (err) {
       setError((err as Error).message || "保存失败，请稍后重试。");
@@ -95,7 +91,7 @@ export default function ArtworkForm({
             : "修改和替换不会改变冒险进度，也不会重复领取奖励。"}
         </p>
       )}
-      <form onSubmit={submit} className={simple ? "simple-upload" : undefined}>
+      <form onSubmit={submit} onChange={() => { requestId.current = crypto.randomUUID(); }} className={simple ? "simple-upload" : undefined}>
         <button
           type="button"
           className={`dropzone ${dragging ? "dragging" : ""} ${preview ? "with-preview" : ""}`}

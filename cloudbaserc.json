@@ -1,0 +1,17 @@
+{
+  "envId": "yongzhe-shuihenzao-d1cb0b673cc3f",
+  "version": "2.0",
+  "region": "ap-shanghai",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "quest-api",
+      "runtime": "Nodejs20.19",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 512,
+      "installDependency": true,
+      "ignore": ["node_modules", "node_modules/**/*", "*.log", ".env*"]
+    }
+  ]
+}

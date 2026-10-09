@@ -73,3 +73,8 @@ service-account*.json
 /test-results/
 /playwright-report/
 /public/demo-*.svg
+/.local/
+/cloudbaserc.local.json
+/cloudfunctions/quest-api/node_modules/
+/cloudbase-backups/
+/.cloudbase/

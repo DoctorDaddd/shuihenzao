@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-09",
+  "targetEnvironment": "yongzhe-shuihenzao-d1cb0b673cc3f",
+  "region": "ap-shanghai",
+  "branch": "cloudbase-shanghai",
+  "productionDeployed": false,
+  "githubPushedAtLocalVerification": false,
+  "oldDataModified": false,
+  "localPreview": "http://127.0.0.1:5175/",
+  "progressAfterVerification": "0/25",
+  "commands": {
+    "npm test": { "passed": 19, "failed": 0 },
+    "npm run build": "passed: TypeScript + Vite + output verification",
+    "node scripts/configure-cloudbase.mjs": "passed: local initialization JSON generated",
+    "git diff --check": "passed"
+  },
+  "browserChecks": [
+    "visitor login prompt, hero login and logout",
+    "PNG upload and original/thumbnail viewing",
+    "optional artwork note save without progress increment",
+    "last test artwork archived; progress returned to 0/25",
+    "admin login, letter editor and save",
+    "five maps at 390px, homepage/login at 375px, no horizontal overflow",
+    "no browser console errors"
+  ],
+  "unverifiedCloudChecks": [
+    "Tencent account authorization, real-name status and existing resource availability",
+    "identity V2 real account login and anonymous sessions",
+    "cloud database transaction behavior and deployed rule interpreter",
+    "cloud storage upload, Linux sharp runtime and signed URLs",
+    "cross-device sync, mainland ISP access and real iOS/Android upload",
+    "GitHub-connected hosting, SPA rewrites, CDN headers",
+    "full cloud backup and recovery rehearsal in a second empty environment"
+  ]
+}
