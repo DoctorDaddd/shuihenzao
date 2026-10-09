@@ -6,6 +6,7 @@ import { localDate, rewardState } from "../lib/quest";
 import Modal from "./Modal";
 import AdminMapPreview from "./AdminMapPreview";
 import { downloadBackup } from "../src/api";
+import type { MusicScene, SoundEffect } from "../lib/adventure-score";
 type Api = (path: string, body?: unknown) => Promise<unknown>;
 export default function Admin({
   state,
@@ -13,12 +14,16 @@ export default function Admin({
   onImport,
   refresh,
   onLogout,
+  onSoundScene,
+  onSoundEffect,
 }: {
   state: QuestState;
   api: Api;
   onImport: () => void;
   refresh: () => Promise<void>;
   onLogout: () => Promise<void>;
+  onSoundScene: (scene: MusicScene) => void;
+  onSoundEffect: (effect: SoundEffect) => void;
 }) {
   const [letter, setLetter] = useState<Letter | null>(null),
     [payment, setPayment] = useState<Reward | null>(null),
@@ -76,7 +81,7 @@ export default function Admin({
           {notice}
         </p>
       )}
-      {state.role === "admin" && <AdminMapPreview count={state.artworks.length} />}
+      {state.role === "admin" && <AdminMapPreview count={state.artworks.length} onSoundScene={onSoundScene} onSoundEffect={onSoundEffect} />}
       <section className="paper-panel admin-wide">
         <div className="section-heading">
           <h2>

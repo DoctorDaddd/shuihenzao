@@ -33,6 +33,8 @@ import AdminLogin from "./AdminLogin";
 import QuestCountdown from "./QuestCountdown";
 import ChapterCelebration from "./ChapterCelebration";
 import HeroTitles from "./HeroTitles";
+import { useAdventureAudio } from "../src/useAdventureAudio";
+import { musicScene, THEMES } from "../lib/adventure-score";
 import { getState, questApi, logout as signOut, localPreview } from "../src/api";
 import {
   CHAPTERS,
@@ -88,8 +90,9 @@ export default function Adventure() {
     [busy, setBusy] = useState(false),
     [moving, setMoving] = useState(false),
     [reduced, setReduced] = useState(false),
-    [sound, setSound] = useState(false),
     [toast, setToast] = useState("");
+  const audio = useAdventureAudio();
+  const { setScene: setSoundScene, play: playSound } = audio;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     mounted = useRef(false),
@@ -123,7 +126,6 @@ export default function Adventure() {
       localStorage.getItem("brush-reduced") === "true" ||
         matchMedia("(prefers-reduced-motion: reduce)").matches,
     );
-    setSound(localStorage.getItem("brush-sound") === "true");
     refresh()
       .then((s) => {
         setChapter(chapterFor(s.artworks.length));
@@ -146,31 +148,13 @@ export default function Adventure() {
   useEffect(() => {
     document.documentElement.dataset.reduced = String(reduced);
   }, [reduced]);
+  useEffect(() => {
+    if (tab !== "admin" || state?.role !== "admin") setSoundScene(musicScene(chapter, count));
+  }, [chapter, count, tab, state?.role, setSoundScene]);
   function notify(text: string) {
     setToast(text);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 4200);
-  }
-  function chime() {
-    if (!sound) return;
-    const context = new AudioContext();
-    [523, 659, 784].forEach((f, i) => {
-      const osc = context.createOscillator(),
-        gain = context.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0, context.currentTime);
-      gain.gain.setValueAtTime(0.045, context.currentTime + i * 0.09);
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        context.currentTime + i * 0.09 + 0.3,
-      );
-      osc.connect(gain);
-      gain.connect(context.destination);
-      osc.start(context.currentTime + i * 0.09);
-      osc.stop(context.currentTime + i * 0.09 + 0.35);
-    });
-    setTimeout(() => void context.close(), 800);
   }
   async function api(path: string, body?: unknown) {
     return questApi(path, body);
@@ -206,6 +190,7 @@ export default function Adventure() {
     }
     if (count >= 25) {
       setCelebration(25);
+      playSound('victory');
       return;
     }
     setUpload({});
@@ -238,17 +223,18 @@ export default function Adventure() {
       setTab("map");
       setChapter(chapterFor(updated.artworks.length));
       setMoving(true);
-      chime();
+      playSound('save');
       setTimeout(
         () => {
           if (mounted.current) {
             setMoving(false);
             setCelebration(updated.artworks.length);
+            if (completedChapter(updated.artworks.length) !== null) playSound('victory');
           }
         },
         reduced ? 0 : 850,
       );
-    } else notify("作品已更新，冒险进度保持不变。");
+    } else { playSound('save'); notify("作品已更新，冒险进度保持不变。"); }
   }
   async function openChest(r: Reward) {
     if (!state) {
@@ -268,7 +254,7 @@ export default function Adventure() {
       await api(`open/${reward.node}`);
       const updated = await refresh();
       setReward(updated.rewards.find((item) => item.node === reward.node) ?? null);
-      chime();
+      playSound('chest');
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -281,6 +267,7 @@ export default function Adventure() {
       return;
     }
     setLetter(l);
+    playSound('letter');
     try {
       await api(`read/${l.id}`);
       await refresh();
@@ -331,6 +318,16 @@ export default function Adventure() {
           {CHAPTERS[currentChapter].name} <b>·</b> LV. {String(currentChapter + 1).padStart(2, "0")}
         </span>
         <div className="header-actions">
+          <button className="sound-toggle" data-sound-control
+            aria-label={audio.enabled && audio.status === 'playing' ? '静音' : '开启声音'}
+            aria-pressed={audio.enabled && audio.status === 'playing'}
+            onClick={() => {
+              if (audio.enabled && audio.status === 'playing') audio.setEnabled(false);
+              else audio.setEnabled(true);
+            }}>
+            {audio.enabled && audio.status === 'playing' ? <Volume2 size={17} /> : <VolumeX size={17} />}
+            <span>{audio.enabled && audio.status === 'playing' ? '静音' : '声音'}</span>
+          </button>
           <button
             className="icon-button settings-button"
             aria-label="偏好设置"
@@ -781,6 +778,8 @@ export default function Adventure() {
           (state?.role === "admin" ? (
             <Admin
               state={state}
+              onSoundScene={setSoundScene}
+              onSoundEffect={playSound}
               onLogout={logout}
               api={api}
               onImport={() => setUpload({ historical: true })}
@@ -878,21 +877,31 @@ export default function Adventure() {
           <div className="preference-row">
             <div>
               <h3>
-                {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                轻轻的游戏音效
+                {audio.enabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                冒险音乐与音效
               </h3>
-              <p>仅在你操作后播放简短音效。</p>
+              <p>五张地图，五段旋律；抵达每章第 4 格转入激昂乐章。</p>
             </div>
             <input
               type="checkbox"
-              aria-label="开启音效"
-              checked={sound}
+              aria-label="开启音乐与音效"
+              checked={audio.enabled}
               onChange={(e) => {
-                setSound(e.target.checked);
-                localStorage.setItem("brush-sound", String(e.target.checked));
+                audio.setEnabled(e.target.checked);
               }}
             />
           </div>
+          <p className="audio-now-playing" role="status">
+            {audio.status === 'playing' ? '正在播放' : audio.enabled ? '点击声音按钮开始播放' : '声音已关闭'}
+            {' · '}{THEMES[audio.scene.chapter].name} · {audio.scene.intense ? '激昂乐章' : '舒缓乐章'}
+          </p>
+          {audio.message && <p className="error" role="alert">{audio.message}</p>}
+          <div className="audio-volumes">
+            <label>音乐音量 <output>{audio.musicVolume}%</output><input type="range" min="0" max="100" step="5" aria-label="音乐音量" value={audio.musicVolume} onChange={e => audio.setVolume('musicVolume', Number(e.target.value))} /></label>
+            <label>音效音量 <output>{audio.effectsVolume}%</output><input type="range" min="0" max="100" step="5" aria-label="音效音量" value={audio.effectsVolume} onChange={e => audio.setVolume('effectsVolume', Number(e.target.value))} /></label>
+            <button className="text-button" data-sound-control disabled={!audio.enabled} onClick={() => { void audio.unlock().then(() => playSound('chest')); }}>试听宝箱音效</button>
+          </div>
+          <p className="small-print">首次开启需轻点声音按钮。切到其他标签页时暂停，回来后继续；静音和音量只影响这台设备。</p>
           <div className="preference-row">
             <div>
               <h3>
