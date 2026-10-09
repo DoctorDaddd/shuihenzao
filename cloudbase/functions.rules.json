@@ -1,0 +1,8 @@
+{
+  "*": {
+    "invoke": false
+  },
+  "quest-api": {
+    "invoke": "auth != null"
+  }
+}

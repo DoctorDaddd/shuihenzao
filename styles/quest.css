@@ -1770,7 +1770,7 @@ textarea {
 }
 .error,
 .error-banner {
-  color: #9e604f !important;
+  color: var(--danger) !important;
   background: #f8e9df;
   border: 1px solid #e2c6b7;
   padding: 10px 13px;
@@ -1803,7 +1803,7 @@ textarea {
 }
 .small-print {
   font-size: 10px !important;
-  color: #a5ad96 !important;
+  color: var(--quiet) !important;
   margin: 22px 0 0 !important;
 }
 .auth-hero {

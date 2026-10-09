@@ -44,9 +44,13 @@ export async function saveArtwork(data: FormData, artwork: Artwork | undefined, 
     if (result.error) throw new Error(result.error.message);
     fileID = result.data.fileID;
   } else {
-    const { cloud } = await import('./cloudbase');
-    const result = await cloud.uploadFile!({ cloudPath: ticket.cloudPath, filePath: image });
-    fileID = result.fileID;
+    const upload = await questApi<{ url: string; token: string; authorization: string; fileID: string; cosFileId: string }>('upload-ticket', { cloudPath: ticket.cloudPath, size: image.size });
+    const result = await fetch(upload.url, {
+      method: 'PUT', body: image, credentials: 'omit', redirect: 'error',
+      headers: { authorization: upload.authorization, 'x-cos-security-token': upload.token, 'x-cos-meta-fileid': upload.cosFileId, key: encodeURIComponent(ticket.cloudPath) },
+    });
+    if (!result.ok) throw new Error('图片上传未完成，请稍后重试。');
+    fileID = upload.fileID;
   }
   return questApi('complete', { ticketId: ticket.ticketId, fileID });
 }

@@ -101,6 +101,21 @@ export interface QuestState {
 export function chapterFor(count: number) {
   return Math.min(4, Math.floor(Math.max(0, count - 1) / 5));
 }
+export const GUARDIANS = [
+  { name: "究极神兵", color: "#e67862" },
+  { name: "龙神巴哈姆特", color: "#e8bf62" },
+  { name: "完美亚历山大", color: "#e8dcc1" },
+  { name: "龙威骑神托尔丹·伪典", color: "#a9dce8" },
+  { name: "阿尔法欧米茄", color: "#96ddd5" },
+] as const;
+export function completedChapter(count: number): number | null {
+  return Number.isInteger(count) && count >= 5 && count <= 25 && count % 5 === 0
+    ? count / 5 - 1 : null;
+}
+export const CHAPTER_TITLES = ["究极", "传奇", "完美", "苍穹", "元始"] as const;
+export function earnedTitles(rewards: readonly Pick<Reward, "node" | "unlocked_at">[]) {
+  return CHAPTER_TITLES.filter((_, i) => rewards.some(r => r.node === (i + 1) * 5 && !!r.unlocked_at));
+}
 export function rewardState(r: Reward) {
   return r.paid_at
     ? "已发放"

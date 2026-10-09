@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const files = await readdir('dist', { recursive: true });
 assert(files.includes('index.html'));
+assert.equal(await readFile('dist/admin/index.html', 'utf8'), await readFile('dist/index.html', 'utf8'), '后台静态入口必须与首页使用相同资源');
 assert(files.includes('fonts/fusion-pixel-12px-zh.woff2') || files.includes('fonts\\fusion-pixel-12px-zh.woff2'));
 for (const file of files) {
   if (!(await stat('dist/' + file)).isFile()) continue;

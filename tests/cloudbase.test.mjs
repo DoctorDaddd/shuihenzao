@@ -21,6 +21,7 @@ function fixture() {
   } };
   const files = new Map();
   const service = createService(store, {
+    async uploadMetadata(cloudPath) { return { fileID: cloudPath }; },
     async urls(ids) { return Object.fromEntries(ids.map(id => [id, `https://storage.example/${id}`])); },
     async finalize(id, ticket, ticketId) {
       if (id !== ticket.cloudPath) throw new Error('INVALID_FILE');
@@ -37,8 +38,16 @@ function fixture() {
     files.set(ticket.cloudPath, bytes);
     return { ticket, input, finish: () => api('complete', { ticketId: ticket.ticketId, fileID: ticket.cloudPath }, user) };
   }
-  return { api, prepare, authorizeUpload: service.authorizeUpload, data: () => data, store, files };
+  return { api, prepare, authorizeUpload: (user, cloudPath, size) => api('upload-ticket', { cloudPath, size }, user), data: () => data, store, files };
 }
+
+test('上传凭证仅由服务端 SDK 为票据路径签发；上游失败不能伪装成功', async () => {
+  const path = 'staging/hero/ticket/original';
+  const data = { url: 'https://storage.example/' + path, token: 'test-token', authorization: 'test-signature', fileId: 'cloud://env.bucket/' + path, cosFileId: 'test-file-id', extra: 'not-exposed' };
+  const storage = cloudStorage({ getUploadMetadata: async input => { assert.deepEqual(input, { cloudPath: path }); return { data }; } }, 'env');
+  assert.deepEqual(await storage.uploadMetadata(path), { url: data.url, token: data.token, authorization: data.authorization, fileID: data.fileId, cosFileId: data.cosFileId });
+  await assert.rejects(cloudStorage({ getUploadMetadata: async () => ({ data: null }) }, 'env').uploadMetadata(path), /UPLOAD_METADATA_FAILED/);
+});
 test('新环境为 0/25；金额、未解锁信件和草稿不会泄漏给访客或勇者', async () => {
   const f = fixture(), s = await f.api('state', {}, visitor);
   assert.equal(s.artworks.length, 0); assert(s.rewards.every(r => r.amount === null)); assert(s.letters.every(l => l.body === undefined));

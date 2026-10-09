@@ -1,5 +1,4 @@
-/* Hallmark · custom JRPG: ink-green command windows, aged brass, field parchment.
-   Pixel geometry and restrained hard bevels belong to the user's game-world brief. */
+/* Original FFVII-inspired menu windows. Existing token names also serve legacy UI. */
 @font-face {
   font-family: "Fusion Pixel";
   src: url("/fonts/fusion-pixel-12px-zh.woff2") format("woff2");
@@ -8,25 +7,29 @@
   font-display: swap;
 }
 :root {
-  --night: oklch(20% 0.025 159);
-  --panel: oklch(26% 0.031 159);
-  --panel-raised: oklch(32% 0.037 157);
-  --panel-hover: oklch(38% 0.041 152);
-  --parchment: oklch(91% 0.039 86);
-  --parchment-shade: oklch(85% 0.051 84);
-  --cream: oklch(94% 0.022 86);
-  --quiet: oklch(78% 0.033 99);
-  --brass: oklch(68% 0.080 83);
-  --brass-dark: oklch(48% 0.051 81);
-  --signal: oklch(84% 0.127 83);
-  --deadline-urgent: oklch(80% 0.125 44);
-  --leaf: oklch(75% 0.104 135);
-  --ink-deep: oklch(27% 0.027 150);
-  --ink-soft: oklch(43% 0.028 143);
-  --danger: oklch(45% 0.15 28);
-  --focus: oklch(87% 0.143 90);
-  --shade: oklch(12% 0.02 160 / .48);
-  --veil: oklch(15% 0.025 160 / .78);
+  color-scheme: dark;
+  --night: #050611;
+  --panel: #09094b;
+  --panel-raised: #202080;
+  --panel-hover: #30309c;
+  --parchment: #101060;
+  --parchment-shade: #080833;
+  --cream: #f4f5ff;
+  --quiet: #bfc8e8;
+  --brass: #c7ccd8;
+  --brass-dark: #626e99;
+  --signal: #9de9e2;
+  --deadline-urgent: #ffb082;
+  --leaf: #74ddad;
+  --ink-deep: #f4f5ff;
+  --ink-soft: #bfc8e8;
+  --danger: #ff9b9b;
+  --focus: #fff0a8;
+  --shade: #00000090;
+  --veil: #02020dd9;
+  --window-fill: linear-gradient(135deg, #17179c 0%, #0c0c64 48%, #05052a 100%);
+  --window-shadow: inset 1px 1px 0 #f6f7ff, inset -1px -1px 0 #555c77, inset 2px 2px 0 #777faf, inset -2px -2px 0 #030318, 3px 4px 0 #000000a6;
+  --text-shadow: 1px 2px 0 #020216;
   --paper: var(--parchment);
   --paper-dark: var(--parchment-shade);
   --ink: var(--ink-deep);

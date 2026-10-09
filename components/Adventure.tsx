@@ -31,11 +31,15 @@ import { Gallery, ArtworkViewer, Compare } from "./Collection";
 import Admin from "./Admin";
 import AdminLogin from "./AdminLogin";
 import QuestCountdown from "./QuestCountdown";
+import ChapterCelebration from "./ChapterCelebration";
+import HeroTitles from "./HeroTitles";
 import { getState, questApi, logout as signOut, localPreview } from "../src/api";
 import {
   CHAPTERS,
   REWARD_STAGES,
   chapterFor,
+  completedChapter,
+  earnedTitles,
   rewardState,
   type Artwork,
   type QuestState,
@@ -92,6 +96,7 @@ export default function Adventure() {
     refreshVersion = useRef(0);
   const data = state ?? emptyState,
     count = data.artworks.length,
+    titles = earnedTitles(data.rewards),
     currentChapter = chapterFor(count),
     nextReward = data.rewards.find((r) => !r.unlocked_at),
     revealed = data.rewards
@@ -100,6 +105,7 @@ export default function Adventure() {
     paid = data.rewards
       .filter((r) => r.paid_at)
       .reduce((n, r) => n + (r.amount ?? 0), 0);
+  const clearedChapter = celebration === null ? null : completedChapter(celebration);
   const refresh = useCallback(async () => {
     const version = ++refreshVersion.current;
     const body = await getState();
@@ -112,7 +118,7 @@ export default function Adventure() {
   }, []);
   useEffect(() => {
     mounted.current = true;
-    if (location.pathname === "/admin") setTab("admin");
+    if (location.pathname.replace(/\/$/, "") === "/admin") setTab("admin");
     setReduced(
       localStorage.getItem("brush-reduced") === "true" ||
         matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -334,7 +340,7 @@ export default function Adventure() {
           </button>
           <button
             className="avatar-button"
-            title="画笔女勇者 · 偏好设置"
+            title="绘灵法师 · 偏好设置"
             onClick={() => setSettings(true)}
           >
             <Girl />
@@ -434,6 +440,7 @@ export default function Adventure() {
                 <PixelWorld
                   chapter={chapter}
                   count={count}
+                  titles={titles}
                   artworks={data.artworks}
                   rewardNodes={data.rewards.map(r => r.node)}
                   moving={moving}
@@ -496,10 +503,11 @@ export default function Adventure() {
                   <div className="section-mini">
                     勇者档案<span>LV. {String(currentChapter + 1).padStart(2, "0")}</span>
                   </div>
-                  <div className="hero-portrait">
+                  <div className={`hero-portrait ${titles.length ? "has-titles" : ""}`}>
                     <div className="portrait-sun" />
+                    <HeroTitles titles={titles} />
                     <Girl level={currentChapter} />
-                    <span className="portrait-caption">画笔使 · 睡很早</span>
+                    <span className="portrait-caption">绘灵法师 · 睡很早</span>
                   </div>
                   <h2>
                     {
@@ -1027,29 +1035,26 @@ export default function Adventure() {
       {celebration !== null && (
         <Modal
           title={
-            celebration === 25
-              ? "你把这个世界，画完整了。"
+            clearedChapter !== null
+              ? `${CHAPTERS[clearedChapter].name}，通关！`
               : "世界因为你，又明亮了一点。"
           }
           onClose={() => setCelebration(null)}
         >
-          <div className="celebration">
+          {clearedChapter !== null ? <ChapterCelebration chapter={clearedChapter} titles={titles} /> : <div className="celebration">
+            <HeroTitles titles={titles} />
             <Girl level={chapterFor(celebration)} />
             <span className="celebration-stars">✦　✧　✦</span>
             <h2>
-              {celebration === 25
-                ? "传说画笔勇者"
-                : "第 " + celebration + " 次冒险 · 已珍藏"}
+              {"第 " + celebration + " 次冒险 · 已珍藏"}
             </h2>
             <strong>
-              {celebration === 25 ? "2,500 EXP · 旅程总经验" : "+ 100 EXP"}
+              + 100 EXP
             </strong>
             <p>
-              {celebration === 25
-                ? "25 幅作品，25 个独一无二的瞬间。谢谢你走到这里。"
-                : "你留下的每一种颜色，都有自己的意义。"}
+              你留下的每一种颜色，都有自己的意义。
             </p>
-          </div>
+          </div>}
           <div className="modal-actions">
             <button
               className="secondary"

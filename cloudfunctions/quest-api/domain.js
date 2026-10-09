@@ -68,6 +68,10 @@ function createService(store, storage) {
     const [action, id] = event.path.split('/');
     const input = event.body ?? {};
     if (!input || typeof input !== 'object' || Array.isArray(input)) fail('请求格式不正确。');
+    if (action === 'upload-ticket') {
+      await authorizeUpload(user, input.cloudPath, input.size);
+      return storage.uploadMetadata(input.cloudPath);
+    }
     if (action === 'state') {
       const { state, result } = await transaction(user, async (_tx, state, role) => ({ state, result: publicState(state, role, user.uid) }));
       const urls = await storage.urls(state.artworks.flatMap(a => [a.fileID, a.thumbnailID]));

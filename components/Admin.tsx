@@ -4,6 +4,7 @@ import { Upload, Mail, ShieldCheck, Download, Plus } from "lucide-react";
 import type { QuestState, Letter, Reward } from "../lib/quest";
 import { localDate, rewardState } from "../lib/quest";
 import Modal from "./Modal";
+import AdminMapPreview from "./AdminMapPreview";
 import { downloadBackup } from "../src/api";
 type Api = (path: string, body?: unknown) => Promise<unknown>;
 export default function Admin({
@@ -75,6 +76,7 @@ export default function Admin({
           {notice}
         </p>
       )}
+      {state.role === "admin" && <AdminMapPreview count={state.artworks.length} />}
       <section className="paper-panel admin-wide">
         <div className="section-heading">
           <h2>

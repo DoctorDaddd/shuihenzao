@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import {
   REWARD_STAGES,
   chapterFor,
+  completedChapter,
+  CHAPTER_TITLES,
+  earnedTitles,
   validDate,
   imageType,
   artworkFields,
@@ -39,6 +42,22 @@ test("章节边界和通关保持在第五章", () => {
     [0, 1, 5, 6, 10, 11, 15, 16, 20, 21, 25].map(chapterFor),
     [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4],
   );
+});
+test("只有五章终点触发章节庆祝，奖励节点 3 与普通上传不触发", () => {
+  assert.deepEqual([5, 10, 15, 20, 25].map(completedChapter), [0, 1, 2, 3, 4]);
+  for (const count of [-5, 0, 1, 3, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 30, 5.5, NaN]) {
+    assert.equal(completedChapter(count), null);
+  }
+});
+test("踏破称号随五章里程碑累积，不依赖开箱或当前作品数量", () => {
+  assert.deepEqual(CHAPTER_TITLES, ["究极", "传奇", "完美", "苍穹", "元始"]);
+  for (const count of [0, 3, 4, 5, 9, 10, 14, 15, 19, 20, 24, 25]) {
+    const rewards = REWARD_STAGES.map(r => ({ node: r.node, unlocked_at: r.node <= count ? "2026-10-09" : null }));
+    assert.deepEqual(earnedTitles(rewards), CHAPTER_TITLES.slice(0, Math.floor(count / 5)));
+  }
+  const retained = [{ node: 10, unlocked_at: "earlier" }, { node: 5, unlocked_at: "earlier" }, { node: 3, unlocked_at: "earlier" }];
+  assert.deepEqual(earnedTitles(retained), ["究极", "传奇"]);
+  assert.deepEqual(earnedTitles([]), []);
 });
 test("实际日期校验包括闰年和不存在的日期", () => {
   assert.ok(validDate("2024-02-29"));

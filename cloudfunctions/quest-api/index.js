@@ -16,6 +16,11 @@ function databaseStore(db) {
 }
 function cloudStorage(app, env) {
   return {
+    async uploadMetadata(cloudPath) {
+      const { data } = await app.getUploadMetadata({ cloudPath });
+      if (!data?.url || !data.token || !data.authorization || !data.fileId || !data.cosFileId) throw new Error('UPLOAD_METADATA_FAILED');
+      return { url: data.url, token: data.token, authorization: data.authorization, fileID: data.fileId, cosFileId: data.cosFileId };
+    },
     async urls(ids) {
       if (!ids.length) return {};
       const result = await app.getTempFileURL({ fileList: [...new Set(ids)].map(fileID => ({ fileID, maxAge: 3600 })) });
