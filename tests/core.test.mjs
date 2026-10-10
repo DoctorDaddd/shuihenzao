@@ -7,6 +7,7 @@ import {
   completedChapter,
   CHAPTER_TITLES,
   earnedTitles,
+  earnedCosmetics,
   validDate,
   imageType,
   artworkFields,
@@ -76,6 +77,31 @@ test("踏破称号随五章里程碑累积，不依赖开箱或当前作品数�
   assert.deepEqual(earnedTitles(retained), ["究极", "传奇"]);
   assert.deepEqual(earnedTitles([]), []);
 });
+test("章节外观在 5/10/15/20 解锁并累计，普通节点和启程宝箱不授予外观", () => {
+  for (let count = 0; count <= 25; count++) {
+    const rewards = REWARD_STAGES.map(r => ({ node: r.node, unlocked_at: r.node <= count ? "2026-10-11" : null }));
+    assert.deepEqual(earnedCosmetics(rewards), {
+      companions: [...(count >= 5 ? ["ruby"] : []), ...(count >= 10 ? ["topaz"] : []), ...(count >= 20 ? ["sapphire"] : [])],
+      glowingWeapon: count >= 15,
+    }, `artwork count ${count}`);
+  }
+});
+test("外观读取云端解锁历史，不要求开箱、付款或作品数量；无写入且重复记录不重复授予", () => {
+  const records = [
+    { node: 20, unlocked_at: "saved", opened_at: null, paid_at: null },
+    { node: 5, unlocked_at: "saved", opened_at: null, paid_at: null },
+    { node: 15, unlocked_at: "saved", opened_at: null, paid_at: null },
+    { node: 5, unlocked_at: "saved", opened_at: null, paid_at: null },
+    { node: 10, unlocked_at: null, opened_at: null, paid_at: null },
+  ];
+  const original = structuredClone(records);
+  assert.deepEqual(earnedCosmetics(JSON.parse(JSON.stringify(records))), {
+    companions: ["ruby", "sapphire"], glowingWeapon: true,
+  });
+  assert.deepEqual(records, original);
+  assert.deepEqual(earnedCosmetics([]), { companions: [], glowingWeapon: false });
+});
+
 test("实际日期校验包括闰年和不存在的日期", () => {
   assert.ok(validDate("2024-02-29"));
   assert.ok(validDate("2026-09-21"));

@@ -1,14 +1,14 @@
 "use client";
 import { useEffect, useRef, type CSSProperties } from "react";
-import { Girl } from "./PixelWorld";
+import { HeroParty } from "./PixelWorld";
 import GuardianPortrait from "./GuardianPortrait";
 import { GUARDIAN_INTROS } from "../lib/guardian-intro";
 import { GUARDIAN_ART } from "../lib/guardian-art";
-import { GUARDIANS } from "../lib/quest";
+import { GUARDIANS, type HeroCosmetics } from "../lib/quest";
 import type { PlaySound } from "../lib/adventure-score";
 
-export default function GuardianIntro({ chapter, reduced, onClose, onSoundEffect, preview = false }: {
-  chapter: number; reduced: boolean; onClose: () => void; onSoundEffect: PlaySound; preview?: boolean;
+export default function GuardianIntro({ chapter, reduced, onClose, onSoundEffect, preview = false, cosmetics }: {
+  chapter: number; reduced: boolean; onClose: () => void; onSoundEffect: PlaySound; preview?: boolean; cosmetics?: HeroCosmetics;
 }) {
   const scene = GUARDIAN_INTROS[chapter];
   const dialog = useRef<HTMLDialogElement>(null);
@@ -43,7 +43,7 @@ export default function GuardianIntro({ chapter, reduced, onClose, onSoundEffect
       </div>
       <div className="intro-camera" aria-hidden="true">
         <GuardianPortrait chapter={chapter} />
-        <div className="intro-scale-hero"><Girl /></div>
+        <div className="intro-scale-hero"><HeroParty level={chapter} cosmetics={cosmetics} /></div>
         <div className="intro-ground" />
       </div>
       {chapter === 0 && <><div className="intro-reactor" aria-hidden="true" /><div className="intro-impact" aria-hidden="true"><i /><i /></div></>}

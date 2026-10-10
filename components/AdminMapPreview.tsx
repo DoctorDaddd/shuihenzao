@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { CHAPTERS, CHAPTER_TITLES, GUARDIANS, REWARD_STAGES, chapterFor, completedChapter } from "../lib/quest";
+import { CHAPTERS, CHAPTER_TITLES, GUARDIANS, REWARD_STAGES, chapterFor, completedChapter, earnedCosmetics } from "../lib/quest";
 import PixelWorld from "./PixelWorld";
 import ChapterCelebration from "./ChapterCelebration";
 import Modal from "./Modal";
@@ -16,6 +16,7 @@ export default function AdminMapPreview({ count, onSoundScene, onSoundEffect, re
   const motionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (motionTimer.current) clearTimeout(motionTimer.current); }, []);
   const chapter = chapterFor(node);
+  const cosmetics = earnedCosmetics(REWARD_STAGES.map(r => ({ node: r.node, unlocked_at: r.node <= node ? "preview" : null })));
   const soundScene = musicScene(chapter, node);
   useEffect(() => { onSoundScene(musicScene(chapter, node)); }, [chapter, node, onSoundScene]);
   function moveTo(next: number) {
@@ -30,7 +31,7 @@ export default function AdminMapPreview({ count, onSoundScene, onSoundEffect, re
   return (
     <section className="paper-panel admin-wide admin-map-preview">
       <div className="section-heading"><h2>勇者动效预览</h2><span className="pill">仅管理员可见</span></div>
-      <p className="muted">点击任意节点移动绘灵法师，按所在节点预览累计称号，抵达各章最后一格时播放通关庆祝。这里的移动不改变作品、奖励或共享进度。</p>
+      <p className="muted">点击任意节点移动绘灵法师，按所在节点预览累计称号、宝石兽与发光武器，抵达各章最后一格时播放通关庆祝。这里的移动不改变作品、奖励或共享进度。</p>
       <div className="preview-controls">
         <label>预览地图<select value={chapter} onChange={e => moveTo(Number(e.target.value) * 5 + 1)}>
           {CHAPTERS.map((c, i) => <option key={c.name} value={i}>{c.name}</option>)}
@@ -44,9 +45,9 @@ export default function AdminMapPreview({ count, onSoundScene, onSoundEffect, re
       <p className="preview-position" role="status">预览位置：第 {node} 格 · {GUARDIANS[chapter].name}镇守　/　实际进度：{count}/25</p>
       <p className="small-print">配乐预览：{THEMES[chapter].name} · {soundScene.intense ? '激昂乐章' : '舒缓乐章'}。开启顶部声音后，移动到第 4 格即可试听转场。</p>
       <PixelWorld key={node} chapter={chapter} count={count} artworks={[]} rewardNodes={REWARD_STAGES.map(r => r.node)}
-        previewNode={node} titles={CHAPTER_TITLES.slice(0, Math.floor(node / 5))} moving={moving} onNode={moveTo} onHover={() => {}} onLeave={() => {}}
+        previewNode={node} titles={CHAPTER_TITLES.slice(0, Math.floor(node / 5))} cosmetics={cosmetics} moving={moving} onNode={moveTo} onHover={() => {}} onLeave={() => {}}
         onGuardianReplay={() => setGuardianIntro(chapter)} />
-      {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={onSoundEffect} preview />}
+      {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} cosmetics={cosmetics} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={onSoundEffect} preview />}
       {celebration !== null && <Modal title="章节通关特效预览" onClose={() => setCelebration(null)}>
         <ChapterCelebration chapter={celebration} preview />
         <div className="modal-actions"><button className="primary" onClick={() => setCelebration(null)}>返回预览地图</button></div>

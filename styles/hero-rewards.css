@@ -1,0 +1,53 @@
+/* Hallmark · component: chapter rewards · genre: playful · theme: existing pixel JRPG
+ * Pre-emit critique: Philosophy 5 · Hierarchy 4 · Execution 4 · Specificity 5 · Restraint 4 · Variety 4
+ * Decorative rewards inherit the existing modal controls and preference states. */
+.hero-party { position: relative; display: inline-grid; vertical-align: bottom; isolation: isolate; }
+.hero-party > .pixel-girl { display: block; position: relative; z-index: 1; }
+.hero-party > .carbuncle { position: absolute; width: 72%; height: auto; bottom: 0; pointer-events: none; overflow: visible; image-rendering: pixelated; z-index: 2; }
+.carbuncle-ruby { --fur: var(--ruby-fur); --fur-shade: var(--ruby-shade); --fur-light: var(--ruby-light); left: -54%; }
+.carbuncle-topaz { --fur: var(--topaz-fur); --fur-shade: var(--topaz-shade); --fur-light: var(--topaz-light); right: -62%; transform: scaleX(-1); }
+.hero-party > .carbuncle-sapphire { --fur: var(--sapphire-fur); --fur-shade: var(--sapphire-shade); --fur-light: var(--sapphire-light); left: 14%; bottom: -17%; }
+.carbuncle-body { animation: familiar-breathe 3.6s steps(2) infinite; }
+.carbuncle-topaz .carbuncle-body { animation-delay: -.9s; }
+.carbuncle-sapphire .carbuncle-body { animation-delay: -1.8s; }
+.carbuncle-tail { transform-origin: 29px 27px; animation: familiar-tail 4.8s steps(4) infinite; }
+.carbuncle-topaz .carbuncle-tail { animation-delay: -1.2s; }
+.carbuncle-sapphire .carbuncle-tail { animation-delay: -2.4s; }
+.weapon-gear { fill: var(--weapon-gold); animation: painter-gear 16s linear infinite; }
+.weapon-gear-small { animation-duration: 12s; animation-direction: reverse; }
+.weapon-light { filter: drop-shadow(0 0 1px var(--weapon-ice)); }
+.weapon-glints { animation: painter-glint 3s steps(4) infinite; }
+.hero-profile .hero-portrait:has(.carbuncle-sapphire) { padding-bottom: 48px; }
+.intro-scale-hero .hero-party { width: 100%; height: 100%; }
+.celebration > .hero-party { display: table; margin: 0 auto 24px; }
+.celebration > .hero-party > .pixel-girl { width: 100px; height: 125px; animation: hero-celebrate .65s ease-in-out 3; }
+.chapter-victory .victory-prize { max-width: 28em; margin: 18px auto; color: var(--focus); font: 17px/1.7 var(--serif); text-wrap: balance; overflow-wrap: anywhere; }
+.victory-stage { min-height: 250px; }
+.chapter-victory-final .victory-stage { min-height: 290px; }
+.chapter-victory-final .victory-ring, .chapter-victory-final .victory-particles { display: none; }
+.chapter-victory-final .victory-prize { font-size: 22px; }
+.victory-fireworks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.firework { position: absolute; color: var(--weapon-gold); }
+.firework-1 { color: var(--sapphire-light); }
+.firework-2 { color: var(--ruby-light); }
+.firework i { position: absolute; transform: rotate(var(--ray-angle)); }
+.firework i b { position: absolute; width: 4px; height: 4px; background: currentColor; opacity: 0; animation: firework-burst 4.8s var(--ease-out) var(--burst-delay) 3; box-shadow: 0 9px 0 currentColor; }
+.firework-trail { position: absolute; width: 2px; height: 24px; background: currentColor; opacity: 0; animation: firework-launch 4.8s ease-out var(--burst-delay) 3; }
+@keyframes familiar-breathe { 50% { transform: translateY(-1px); } }
+@keyframes familiar-tail { 50% { transform: rotate(-8deg); } }
+@keyframes painter-gear { to { transform: rotate(360deg); } }
+@keyframes painter-glint { 50% { opacity: .35; } }
+@keyframes firework-launch { 0% { opacity: 0; transform: translateY(110px) scaleY(1); } 9% { opacity: .8; } 17% { opacity: 0; transform: translateY(0) scaleY(.2); } 100% { opacity: 0; } }
+@keyframes firework-burst { 0%, 16% { opacity: 0; transform: translateY(0) scale(.4); } 20% { opacity: 1; } 48% { opacity: .8; } 76%, 100% { opacity: 0; transform: translateY(calc(-1 * var(--burst-size) * var(--ray-length))) scale(.4); } }
+@media (max-width: 600px) {
+  .chapter-victory .victory-prize { font-size: 16px; }
+  .chapter-victory-final .victory-prize { font-size: 20px; }
+}
+html[data-reduced="true"] :is(.carbuncle-body, .carbuncle-tail, .weapon-gear, .weapon-glints, .firework i b, .firework-trail) { animation: none !important; }
+html[data-reduced="true"] .firework i b { opacity: .65; transform: translateY(calc(-.65 * var(--burst-size) * var(--ray-length))); box-shadow: none; }
+html[data-reduced="true"] .firework-trail { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.carbuncle-body, .carbuncle-tail, .weapon-gear, .weapon-glints, .firework i b, .firework-trail) { animation: none !important; }
+  .firework i b { opacity: .65; transform: translateY(calc(-.65 * var(--burst-size) * var(--ray-length))); box-shadow: none; }
+  .firework-trail { display: none; }
+}

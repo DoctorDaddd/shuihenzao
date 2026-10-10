@@ -1,23 +1,26 @@
 "use client";
 import type { CSSProperties } from "react";
-import type { Artwork } from "../lib/quest";
+import type { Artwork, HeroCosmetics } from "../lib/quest";
 import { CHAPTERS } from "../lib/quest";
 import ChapterScenery, { WORLD_LAYOUTS } from "./ChapterScenery";
 import MapGuardian from "./MapGuardian";
 import HeroTitles from "./HeroTitles";
+import { Carbuncle, GlowingPainterWeapon } from "./HeroRewards";
 
 export function Girl({
   className = "",
   level = 0,
+  glowingWeapon = false,
 }: {
   className?: string;
   level?: number;
+  glowingWeapon?: boolean;
 }) {
   return (
     <svg
       viewBox="0 0 32 40"
       className={`pixel-girl ${className}`}
-      aria-label="手持画笔与调色盘的绘灵法师女勇者"
+      aria-label={glowingWeapon ? "手持绝亚发光画家武器与调色盘的绘灵法师女勇者" : "手持画笔与调色盘的绘灵法师女勇者"}
       role="img"
       shapeRendering="crispEdges"
     >
@@ -72,10 +75,10 @@ export function Girl({
         <g className="girl-arm">
           <path d="M21 22H25V24H26V27H22Z" fill="#f5efdb" />
           <path d="M23 24H26V27H23Z" fill={level > 0 ? "#c97d72" : "#81b9bb"} />
+          {glowingWeapon ? <GlowingPainterWeapon /> : <g>
           <path d="M26 14H28V34H26Z" fill="#354c54" />
           <path d="M27 17H28V30H27Z" fill="#81b9bb" />
           <path d="M25 14H29V17H25ZM26 31H28V33H26Z" fill="#d3ab62" />
-          <path d="M24 26H28V28H24Z" fill="#efc3a0" />
           <path d="M24 12H30V15H24Z" fill="#8c6546" />
           <path d="M25 12H29V14H25Z" fill="#e9bf67" />
           <path
@@ -84,6 +87,8 @@ export function Girl({
           />
           <path d="M27 3H29V5H30V7H27V8H25V7H26V5H27Z" fill={level > 1 ? "#81d4cf" : "#c97d72"} />
           <path d="M26 9H27V12H26Z" fill="#b9c5bd" />
+          </g>}
+          <path d="M24 26H28V28H24Z" fill="#efc3a0" />
         </g>
         <path
           className="girl-leg left"
@@ -127,6 +132,13 @@ export function Chest({
     </svg>
   );
 }
+export function HeroParty({ level = 0, cosmetics }: { level?: number; cosmetics?: HeroCosmetics }) {
+  return <div className="hero-party">
+    <Girl level={level} glowingWeapon={cosmetics?.glowingWeapon} />
+    {cosmetics?.companions.map(kind => <Carbuncle key={kind} kind={kind} />)}
+  </div>;
+}
+
 export default function PixelWorld({
   chapter,
   count,
@@ -138,6 +150,7 @@ export default function PixelWorld({
   moving,
   previewNode,
   titles = [],
+  cosmetics,
   onGuardianReplay,
 }: {
   chapter: number;
@@ -150,6 +163,7 @@ export default function PixelWorld({
   moving: boolean;
   previewNode?: number;
   titles?: readonly string[];
+  cosmetics?: HeroCosmetics;
   onGuardianReplay?: () => void;
 }) {
   const layout = WORLD_LAYOUTS[chapter];
@@ -223,7 +237,7 @@ export default function PixelWorld({
                   <HeroTitles titles={titles} />
                   <div className="you-tag">{previewNode !== undefined ? "预览位置" : "你在这里"}</div>
                 </div>
-                <Girl level={chapter} />
+                <HeroParty level={chapter} cosmetics={cosmetics} />
               </div>
             )}
             {chest && !current && <Chest className="map-chest" />}

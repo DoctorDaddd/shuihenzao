@@ -24,7 +24,7 @@ import {
   Expand,
   Feather,
 } from "lucide-react";
-import PixelWorld, { Girl, Chest } from "./PixelWorld";
+import PixelWorld, { Girl, HeroParty, Chest } from "./PixelWorld";
 import Modal from "./Modal";
 import ArtworkForm from "./ArtworkForm";
 import { Gallery, ArtworkViewer, Compare } from "./Collection";
@@ -44,6 +44,7 @@ import {
   chapterFor,
   completedChapter,
   earnedTitles,
+  earnedCosmetics,
   rewardState,
   type Artwork,
   type QuestState,
@@ -105,6 +106,7 @@ export default function Adventure() {
   const data = state ?? emptyState,
     count = data.artworks.length,
     titles = earnedTitles(data.rewards),
+    cosmetics = earnedCosmetics(data.rewards),
     currentChapter = chapterFor(count),
     nextReward = data.rewards.find((r) => !r.unlocked_at),
     revealed = data.rewards
@@ -364,7 +366,7 @@ export default function Adventure() {
             title="绘灵法师 · 偏好设置"
             onClick={() => setSettings(true)}
           >
-            <Girl />
+            <Girl glowingWeapon={cosmetics.glowingWeapon} />
           </button>
         </div>
       </header>
@@ -462,6 +464,7 @@ export default function Adventure() {
                   chapter={chapter}
                   count={count}
                   titles={titles}
+                  cosmetics={cosmetics}
                   artworks={data.artworks}
                   rewardNodes={data.rewards.map(r => r.node)}
                   moving={moving}
@@ -495,7 +498,7 @@ export default function Adventure() {
                 </div>
                 <div className="journey-action">
                   <div className="action-copy">
-                    <div className="dialogue-avatar"><Girl level={currentChapter} /></div>
+                    <div className="dialogue-avatar"><Girl level={currentChapter} glowingWeapon={cosmetics.glowingWeapon} /></div>
                     <div>
                       <h2>
                         {count === 25
@@ -528,7 +531,7 @@ export default function Adventure() {
                   <div className={`hero-portrait ${titles.length ? "has-titles" : ""}`}>
                     <div className="portrait-sun" />
                     <HeroTitles titles={titles} />
-                    <Girl level={currentChapter} />
+                    <HeroParty level={currentChapter} cosmetics={cosmetics} />
                     <span className="portrait-caption">绘灵法师 · 睡很早</span>
                   </div>
                   <h2>
@@ -836,7 +839,7 @@ export default function Adventure() {
           {state?.role === "admin" ? "管理冒险" : "冒险发起人入口"}
         </button>
       </footer>
-      {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={playSound} />}
+      {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} cosmetics={cosmetics} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={playSound} />}
       {preview && (
         <div className="art-hover" style={{ left: preview.x, top: preview.y }}>
           <img src={preview.art.thumbnailUrl || preview.art.imageUrl} alt={preview.art.title} decoding="async" />
@@ -1077,9 +1080,9 @@ export default function Adventure() {
           }
           onClose={() => setCelebration(null)}
         >
-          {clearedChapter !== null ? <ChapterCelebration chapter={clearedChapter} titles={titles} /> : <div className="celebration">
+          {clearedChapter !== null ? <ChapterCelebration chapter={clearedChapter} titles={titles} cosmetics={cosmetics} /> : <div className="celebration">
             <HeroTitles titles={titles} />
-            <Girl level={chapterFor(celebration)} />
+            <HeroParty level={chapterFor(celebration)} cosmetics={cosmetics} />
             <span className="celebration-stars">✦　✧　✦</span>
             <h2>
               {"第 " + celebration + " 次冒险 · 已珍藏"}

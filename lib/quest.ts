@@ -116,6 +116,28 @@ export const CHAPTER_TITLES = ["究极", "传奇", "完美", "苍穹", "元始"]
 export function earnedTitles(rewards: readonly Pick<Reward, "node" | "unlocked_at">[]) {
   return CHAPTER_TITLES.filter((_, i) => rewards.some(r => r.node === (i + 1) * 5 && !!r.unlocked_at));
 }
+export type Companion = "ruby" | "topaz" | "sapphire";
+export interface HeroCosmetics {
+  companions: readonly Companion[];
+  glowingWeapon: boolean;
+}
+export const CHAPTER_PRIZES: readonly {
+  node: number; message: string; companion?: Companion; glowingWeapon?: boolean;
+}[] = [
+  { node: 5, companion: "ruby", message: "咦？神奇的红宝石兽冒了出来非要跟随勇者！" },
+  { node: 10, companion: "topaz", message: "咦？神奇的黄宝石兽冒了出来非要跟随勇者！" },
+  { node: 15, glowingWeapon: true, message: "哇，是游戏里还没有实装的绝亚发光画家武器！" },
+  { node: 20, companion: "sapphire", message: "咦？神奇的蓝宝石兽冒了出来非要跟随勇者！" },
+  { node: 25, message: "恭喜勇者五绝通关！成为五绝高手！" },
+];
+// Like titles, appearances follow persisted unlocks, not the viewed map or current artwork count.
+export function earnedCosmetics(rewards: readonly Pick<Reward, "node" | "unlocked_at">[]): HeroCosmetics {
+  const prizes = CHAPTER_PRIZES.filter(p => rewards.some(r => r.node === p.node && !!r.unlocked_at));
+  return {
+    companions: prizes.flatMap(p => p.companion ? [p.companion] : []),
+    glowingWeapon: prizes.some(p => p.glowingWeapon),
+  };
+}
 export function rewardState(r: Reward) {
   return r.paid_at
     ? "已发放"
