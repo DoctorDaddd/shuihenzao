@@ -4,10 +4,10 @@
   "maxImageBytes": 10485760,
   "milestones": [
     { "node": 3, "amount": 100, "name": "启程的礼物" },
-    { "node": 5, "amount": 150, "name": "草原宝箱" },
-    { "node": 10, "amount": 200, "name": "森林宝箱" },
-    { "node": 15, "amount": 250, "name": "遗迹宝箱" },
-    { "node": 20, "amount": 350, "name": "雪山宝箱" },
-    { "node": 25, "amount": 450, "name": "传说宝箱" }
+    { "node": 5, "amount": 150, "name": "究极宝箱" },
+    { "node": 10, "amount": 200, "name": "传说宝箱" },
+    { "node": 15, "amount": 250, "name": "完美宝箱" },
+    { "node": 20, "amount": 350, "name": "苍穹宝箱" },
+    { "node": 25, "amount": 450, "name": "元始宝箱" }
   ]
 }

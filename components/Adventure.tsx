@@ -565,7 +565,7 @@ export default function Adventure() {
                   <div className="treasure-heading">
                     <Chest opened={!nextReward} />
                     <div>
-                      <h3>{nextReward?.name || "传说宝箱"}</h3>
+                      <h3>{nextReward?.name || REWARD_STAGES[REWARD_STAGES.length - 1].name}</h3>
                       <span>
                         {nextReward
                           ? `第 ${nextReward.node} 幅作品后开启`

@@ -1,10 +1,10 @@
 export const REWARD_STAGES = [
   { node: 3, name: "启程的礼物" },
-  { node: 5, name: "草原宝箱" },
-  { node: 10, name: "森林宝箱" },
-  { node: 15, name: "遗迹宝箱" },
-  { node: 20, name: "雪山宝箱" },
-  { node: 25, name: "传说宝箱" },
+  { node: 5, name: "究极宝箱" },
+  { node: 10, name: "传说宝箱" },
+  { node: 15, name: "完美宝箱" },
+  { node: 20, name: "苍穹宝箱" },
+  { node: 25, name: "元始宝箱" },
 ] as const;
 // November 7 is inclusive: the countdown ends at midnight in Beijing.
 export const QUEST_ENDS_AT = Date.parse("2026-11-08T00:00:00+08:00");
