@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { guardianAtGate, shouldIntroduceGuardian } from '../lib/guardian-intro.ts';
 import {
   REWARD_STAGES,
   chapterFor,
@@ -13,6 +14,22 @@ import {
   QUEST_ENDS_AT,
   questCountdown,
 } from "../lib/quest.ts";
+
+test('五章首领在各章第四张新作品时分别触发，刷新、编辑、撤回、导入跳跃不误触发', () => {
+  for (let chapter = 0; chapter < 5; chapter++) {
+    const gate = chapter * 5 + 4;
+    assert.equal(guardianAtGate(gate), chapter);
+    assert.equal(shouldIntroduceGuardian(gate - 1, gate, false), true);
+    assert.equal(shouldIntroduceGuardian(gate - 1, gate, true), false);
+    assert.equal(shouldIntroduceGuardian(gate, gate, false), false);
+    assert.equal(shouldIntroduceGuardian(gate + 1, gate, false), false);
+    assert.equal(shouldIntroduceGuardian(gate - 2, gate, false), false);
+  }
+  for (const n of [-1, 0, 3, 4.5, 5, 10, 25, 29, NaN]) assert.equal(guardianAtGate(n), null);
+  for (const [before, after] of [[4, 4], [0, 4], [4, 3], [2, 3], [4, 5], [28, 29]]) {
+    assert.equal(shouldIntroduceGuardian(before, after, false), false);
+  }
+});
 
 test("终章倒计时包含北京时间 11 月 7 日全天，临界点与完成状态正确", () => {
   assert.equal(QUEST_ENDS_AT, Date.parse("2026-11-07T16:00:00Z"));

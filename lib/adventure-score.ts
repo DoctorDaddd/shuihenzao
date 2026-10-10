@@ -1,6 +1,7 @@
 // Original 16-bar themes. Pitches are MIDI notes; timing is in quarter-note beats.
 export type Voice = 'flute' | 'bell' | 'harp' | 'pad' | 'brass' | 'organ' | 'bass' | 'kick' | 'snare' | 'hat';
-export type SoundEffect = 'select' | 'save' | 'chest' | 'letter' | 'victory';
+export type SoundEffect = 'select' | 'save' | 'chest' | 'letter' | 'victory' | 'guardian-rise' | 'guardian-reveal';
+export type PlaySound = (effect: SoundEffect) => void | (() => void);
 export type MusicScene = { chapter: number; intense: boolean };
 export type Note = { beat: number; pitch: number; duration: number; voice: Voice; volume: number; pan: number };
 export const THEMES = [
@@ -56,7 +57,19 @@ export function createScore(scene: MusicScene) {
 }
 
 export function effectScore(effect: SoundEffect): Note[] {
-  const phrases: Record<SoundEffect, number[]> = {
+  if (effect === 'guardian-rise') return [
+    { beat: 0, pitch: 29, duration: 1.6, voice: 'bass', volume: .12, pan: 0 },
+    { beat: .3, pitch: 41, duration: 1.4, voice: 'pad', volume: .055, pan: -.25 },
+    { beat: .9, pitch: 48, duration: 1.2, voice: 'pad', volume: .05, pan: .25 },
+    { beat: .5, pitch: 80, duration: .5, voice: 'hat', volume: .016, pan: -.4 },
+    { beat: 1.1, pitch: 80, duration: .6, voice: 'hat', volume: .022, pan: .4 },
+  ];
+  if (effect === 'guardian-reveal') return [
+    { beat: 0, pitch: 36, duration: .3, voice: 'kick', volume: .18, pan: 0 },
+    ...[38, 45, 50].map(pitch => ({ beat: .06, pitch, duration: .9, voice: 'brass' as const, volume: .065, pan: 0 })),
+    { beat: .2, pitch: 74, duration: .65, voice: 'bell', volume: .04, pan: .2 },
+  ];
+  const phrases = {
     select: [76, 81], save: [62, 66, 69, 74], chest: [74, 78, 81, 86, 81, 86],
     letter: [81, 78, 74], victory: [62, 62, 69, 74, 73, 74, 78, 81, 86],
   };

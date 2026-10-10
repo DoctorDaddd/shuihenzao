@@ -103,7 +103,7 @@ export function chapterFor(count: number) {
 }
 export const GUARDIANS = [
   { name: "究极神兵", color: "#e67862" },
-  { name: "龙神巴哈姆特", color: "#e8bf62" },
+  { name: "至尊巴哈姆特", color: "#e8bf62" },
   { name: "完美亚历山大", color: "#e8dcc1" },
   { name: "龙威骑神托尔丹·伪典", color: "#a9dce8" },
   { name: "阿尔法欧米茄", color: "#96ddd5" },

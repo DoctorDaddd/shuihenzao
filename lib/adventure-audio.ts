@@ -207,7 +207,16 @@ export class AdventureAudio {
       this.music.gain.setTargetAtTime(this.snapshot.musicVolume / 100 * .4, now, .035);
       this.music.gain.setTargetAtTime(this.snapshot.musicVolume / 100, now + (effect === 'victory' ? 2 : 1), .3);
     }
-    for (const note of effectScore(effect)) this.watch(scheduleNote(this.context, this.effects, note, now + note.beat), this.effectSources);
+    const sources = effectScore(effect).flatMap(note => scheduleNote(this.context!, this.effects!, note, now + note.beat));
+    this.watch(sources, this.effectSources);
+    return () => {
+      for (const source of sources) if (this.effectSources.has(source)) { source.stop(); this.effectSources.delete(source); }
+      if (effect !== 'select' && this.music && this.context) {
+        const time = this.context.currentTime;
+        this.music.gain.cancelScheduledValues(time);
+        this.music.gain.setTargetAtTime(this.snapshot.musicVolume / 100, time, .15);
+      }
+    };
   };
   dispose() {
     this.stopMusic(); this.effectSources.clear();

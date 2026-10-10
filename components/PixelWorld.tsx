@@ -138,6 +138,7 @@ export default function PixelWorld({
   moving,
   previewNode,
   titles = [],
+  onGuardianReplay,
 }: {
   chapter: number;
   count: number;
@@ -149,6 +150,7 @@ export default function PixelWorld({
   moving: boolean;
   previewNode?: number;
   titles?: readonly string[];
+  onGuardianReplay?: () => void;
 }) {
   const layout = WORLD_LAYOUTS[chapter];
   const localProgress = Math.max(0, Math.min(5, count - chapter * 5));
@@ -253,7 +255,7 @@ export default function PixelWorld({
           </div>
         );
       })}
-      <MapGuardian chapter={chapter} endpoint={layout.points[4]} />
+      <MapGuardian chapter={chapter} onReplay={onGuardianReplay} />
       <div className="map-legend">
         <span>
           <i className="legend-done" /> 已留下的足迹

@@ -113,3 +113,26 @@ test('快速静音再开启、后台暂停恢复、切图淡化和清理不会�
   engine.dispose();
   assert.equal(context.state, 'closed'); assert.equal(engine.timer, null); assert.equal(engine.tracks.size, 0);
 });
+
+test('首领演出跳过可取消本段音效并恢复音乐，静音时不会创建演出音源', async t => {
+  const context = new Context(), engine = new AdventureAudio(() => context);
+  t.after(() => engine.dispose());
+  engine.configure(true, 35, 60);
+  await engine.unlock();
+  for (const effect of ['guardian-rise', 'guardian-reveal']) {
+    const before = context.sources.length;
+    const cancel = engine.play(effect);
+    const added = context.sources.slice(before);
+    assert(added.length > 0);
+    assert.equal(typeof cancel, 'function');
+    cancel();
+    assert(added.every(source => source.stopTime === 0));
+    assert.equal(context.gains[0].gain.value, .35);
+    assert.equal(engine.getSnapshot().status, 'playing');
+    assert(effectScore(effect).every(n => Number.isFinite(n.pitch) && n.volume > 0 && n.volume <= .25));
+  }
+  engine.setEnabled(false);
+  const mutedCount = context.sources.length;
+  engine.play('guardian-rise');
+  assert.equal(context.sources.length, mutedCount);
+});

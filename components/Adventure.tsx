@@ -33,6 +33,8 @@ import AdminLogin from "./AdminLogin";
 import QuestCountdown from "./QuestCountdown";
 import ChapterCelebration from "./ChapterCelebration";
 import HeroTitles from "./HeroTitles";
+import GuardianIntro from "./GuardianIntro";
+import { guardianAtGate, shouldIntroduceGuardian } from "../lib/guardian-intro";
 import { useAdventureAudio } from "../src/useAdventureAudio";
 import { musicScene, THEMES } from "../lib/adventure-score";
 import { getState, questApi, logout as signOut, localPreview } from "../src/api";
@@ -87,6 +89,7 @@ export default function Adventure() {
     [reward, setReward] = useState<Reward | null>(null),
     [confirmDelete, setConfirmDelete] = useState(false);
   const [celebration, setCelebration] = useState<number | null>(null),
+    [guardianIntro, setGuardianIntro] = useState<number | null>(null),
     [busy, setBusy] = useState(false),
     [moving, setMoving] = useState(false),
     [reduced, setReduced] = useState(false),
@@ -95,6 +98,8 @@ export default function Adventure() {
   const { setScene: setSoundScene, play: playSound } = audio;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    guardianSeen = useRef(new Set<number>()),
     mounted = useRef(false),
     refreshVersion = useRef(0);
   const data = state ?? emptyState,
@@ -136,6 +141,7 @@ export default function Adventure() {
       mounted.current = false;
       if (toastTimer.current) clearTimeout(toastTimer.current);
       if (previewTimer.current) clearTimeout(previewTimer.current);
+      if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
     };
   }, [refresh]);
   useEffect(() => {
@@ -177,6 +183,9 @@ export default function Adventure() {
     }
   }
   function navigate(value: Tab) {
+    if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
+    setMoving(false);
+    setGuardianIntro(null);
     setPreview(null);
     setTab(value);
     history.replaceState(null, "", value === "admin" ? "/admin" : "/");
@@ -224,10 +233,25 @@ export default function Adventure() {
       setChapter(chapterFor(updated.artworks.length));
       setMoving(true);
       playSound('save');
-      setTimeout(
+      if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
+      saveFeedbackTimer.current = setTimeout(
         () => {
           if (mounted.current) {
             setMoving(false);
+            const introChapter = guardianAtGate(updated.artworks.length);
+            if (introChapter !== null && shouldIntroduceGuardian(count, updated.artworks.length, guardianSeen.current.has(introChapter))) {
+              let seen = false;
+              const seenKey = `brush-guardian-intro-${introChapter}`;
+              try { seen = localStorage.getItem(seenKey) === 'seen'; }
+              catch (error) { console.warn('guardian_intro_preference_unavailable', error); }
+              guardianSeen.current.add(introChapter);
+              if (!seen) {
+                try { localStorage.setItem(seenKey, 'seen'); }
+                catch (error) { console.warn('guardian_intro_preference_unavailable', error); }
+                setGuardianIntro(introChapter);
+                return;
+              }
+            }
             setCelebration(updated.artworks.length);
             if (completedChapter(updated.artworks.length) !== null) playSound('victory');
           }
@@ -443,6 +467,7 @@ export default function Adventure() {
                   moving={moving}
                   onHover={hover}
                   onLeave={leave}
+                  onGuardianReplay={count >= chapter * 5 + 4 ? () => setGuardianIntro(chapter) : undefined}
                   onNode={(node) => {
                     leave();
                     const art = data.artworks.find((a) => a.node === node);
@@ -778,6 +803,7 @@ export default function Adventure() {
           (state?.role === "admin" ? (
             <Admin
               state={state}
+              reduced={reduced}
               onSoundScene={setSoundScene}
               onSoundEffect={playSound}
               onLogout={logout}
@@ -810,6 +836,7 @@ export default function Adventure() {
           {state?.role === "admin" ? "管理冒险" : "冒险发起人入口"}
         </button>
       </footer>
+      {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={playSound} />}
       {preview && (
         <div className="art-hover" style={{ left: preview.x, top: preview.y }}>
           <img src={preview.art.thumbnailUrl || preview.art.imageUrl} alt={preview.art.title} decoding="async" />

@@ -4,11 +4,14 @@ import { CHAPTERS, CHAPTER_TITLES, GUARDIANS, REWARD_STAGES, chapterFor, complet
 import PixelWorld from "./PixelWorld";
 import ChapterCelebration from "./ChapterCelebration";
 import Modal from "./Modal";
-import { musicScene, THEMES, type MusicScene, type SoundEffect } from "../lib/adventure-score";
+import { musicScene, THEMES, type MusicScene, type PlaySound } from "../lib/adventure-score";
+import GuardianIntro from "./GuardianIntro";
+import { guardianAtGate } from "../lib/guardian-intro";
 
-export default function AdminMapPreview({ count, onSoundScene, onSoundEffect }: { count: number; onSoundScene: (scene: MusicScene) => void; onSoundEffect: (effect: SoundEffect) => void }) {
+export default function AdminMapPreview({ count, onSoundScene, onSoundEffect, reduced }: { count: number; onSoundScene: (scene: MusicScene) => void; onSoundEffect: PlaySound; reduced: boolean }) {
   const [node, setNode] = useState(Math.max(1, Math.min(25, count)));
   const [celebration, setCelebration] = useState<number | null>(null);
+  const [guardianIntro, setGuardianIntro] = useState<number | null>(null);
   const [moving, setMoving] = useState(false);
   const motionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (motionTimer.current) clearTimeout(motionTimer.current); }, []);
@@ -21,6 +24,7 @@ export default function AdminMapPreview({ count, onSoundScene, onSoundEffect }: 
     if (motionTimer.current) clearTimeout(motionTimer.current);
     motionTimer.current = setTimeout(() => setMoving(false), 850);
     setCelebration(completedChapter(next));
+    setGuardianIntro(guardianAtGate(next));
     if (completedChapter(next) !== null) onSoundEffect('victory');
   }
   return (
@@ -34,12 +38,15 @@ export default function AdminMapPreview({ count, onSoundScene, onSoundEffect }: 
         <button className="secondary" disabled={node === 1} onClick={() => moveTo(node - 1)}>上一步</button>
         <button className="secondary" disabled={node === 25} onClick={() => moveTo(node + 1)}>下一步</button>
         <button className="primary" onClick={() => { setCelebration(chapter); onSoundEffect('victory'); }}>播放本章通关特效</button>
-        <button className="text-button" onClick={() => { setNode(Math.max(1, Math.min(25, count))); setCelebration(null); }}>回到实际位置</button>
+        <button className="secondary" onClick={() => setGuardianIntro(chapter)}>播放首领登场</button>
+        <button className="text-button" onClick={() => { setNode(Math.max(1, Math.min(25, count))); setCelebration(null); setGuardianIntro(null); }}>回到实际位置</button>
       </div>
       <p className="preview-position" role="status">预览位置：第 {node} 格 · {GUARDIANS[chapter].name}镇守　/　实际进度：{count}/25</p>
       <p className="small-print">配乐预览：{THEMES[chapter].name} · {soundScene.intense ? '激昂乐章' : '舒缓乐章'}。开启顶部声音后，移动到第 4 格即可试听转场。</p>
       <PixelWorld key={node} chapter={chapter} count={count} artworks={[]} rewardNodes={REWARD_STAGES.map(r => r.node)}
-        previewNode={node} titles={CHAPTER_TITLES.slice(0, Math.floor(node / 5))} moving={moving} onNode={moveTo} onHover={() => {}} onLeave={() => {}} />
+        previewNode={node} titles={CHAPTER_TITLES.slice(0, Math.floor(node / 5))} moving={moving} onNode={moveTo} onHover={() => {}} onLeave={() => {}}
+        onGuardianReplay={() => setGuardianIntro(chapter)} />
+      {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={onSoundEffect} preview />}
       {celebration !== null && <Modal title="章节通关特效预览" onClose={() => setCelebration(null)}>
         <ChapterCelebration chapter={celebration} preview />
         <div className="modal-actions"><button className="primary" onClick={() => setCelebration(null)}>返回预览地图</button></div>
