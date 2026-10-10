@@ -225,6 +225,23 @@ html:has(.guardian-intro[open]) { overflow: hidden; }
 @keyframes omega-gate { 0% { opacity: 1; } 24% { clip-path: polygon(0 0,20% 0,20% 100%,0 100%,0 0,80% 0,100% 0,100% 100%,80% 100%,80% 0); } 48%,100% { opacity: 0; } }
 @keyframes omega-orbit { from { transform: translateX(-50%) rotate(-90deg) scale(.4); opacity: 0; } to { transform: translateX(-50%) rotate(35deg); opacity: .5; } }
 @keyframes omega-scan { 0% { transform: translateY(-60%); opacity: 0; } 30% { opacity: .7; } 70%,100% { transform: translateY(55%); opacity: 0; } }
+/* Hold the wide shot; only its independent effects loop after the original entrance. */
+.guardian-intro { cursor: pointer; }
+.intro-dismiss { position: absolute; z-index: 6; bottom: 2.5%; left: 0; right: 0; margin: 0; text-align: center; color: var(--cream); font: 12px/1.5 var(--serif); }
+.intro-reactor { animation: ultima-reactor var(--intro-duration) both, intro-hold-glow 4.8s ease-in-out var(--intro-duration) infinite; }
+.intro-flare { animation: bahamut-flare var(--intro-duration) both, intro-hold-glow 6s ease-in-out var(--intro-duration) infinite; }
+.intro-embers i { animation: intro-ember var(--intro-duration) steps(18) var(--effect-delay) both, intro-ember 5s steps(18) calc(var(--intro-duration) + var(--effect-delay)) infinite; }
+.intro-meteor { animation: bahamut-meteor var(--intro-duration) linear var(--effect-delay) both, bahamut-meteor 7.2s linear calc(var(--intro-duration) + var(--effect-delay)) infinite; }
+.intro-clock-hand { animation: alexander-time-stop var(--intro-duration) steps(12) both, intro-hold-clock 32s linear var(--intro-duration) infinite; }
+.intro-clock-hand.short { animation: alexander-time-stop var(--intro-duration) steps(12) reverse both, intro-hold-clock-short 48s linear var(--intro-duration) infinite; }
+.intro-slash { animation: thordan-blade var(--intro-duration) both, thordan-blade 8s var(--intro-duration) infinite; }
+.intro-slash.slash-right { animation-delay: .28s, calc(var(--intro-duration) + .28s); }
+.intro-orbit { animation: omega-orbit var(--intro-duration) steps(18) both, intro-hold-orbit 32s linear var(--intro-duration) infinite; }
+.intro-scan { animation: omega-scan var(--intro-duration) both, omega-scan 7s var(--intro-duration) infinite; }
+@keyframes intro-hold-glow { 0%,100% { opacity: 0; } 50% { opacity: .4; } }
+@keyframes intro-hold-clock { from { transform: rotate(300deg); } to { transform: rotate(660deg); } }
+@keyframes intro-hold-clock-short { from { transform: rotate(-240deg); } to { transform: rotate(-600deg); } }
+@keyframes intro-hold-orbit { from { transform: translateX(-50%) rotate(35deg); opacity: .5; } to { transform: translateX(-50%) rotate(395deg); opacity: .5; } }
 .intro-reduced *, .intro-reduced *:before, .intro-reduced *:after { animation: none !important; }
 .intro-reduced .intro-camera { transform: translate(-50%,-50%); transform-origin: 50% 50%; filter: none; }
 .intro-reduced .intro-clouds,.intro-reduced .intro-embers,.intro-reduced .intro-progress,.intro-reduced .intro-sword-light,.intro-reduced .intro-scan,.intro-reduced .intro-meteor,.intro-reduced .intro-flare,.intro-reduced .intro-impact,.intro-reduced .intro-roar,.intro-reduced .intro-reactor,.intro-reduced .intro-cue,.intro-reduced .intro-cut-flash,.intro-reduced .intro-time-seal,.intro-reduced .intro-rift-gate { display: none; }

@@ -12,8 +12,6 @@ export default function GuardianIntro({ chapter, reduced, onClose, onSoundEffect
 }) {
   const scene = GUARDIAN_INTROS[chapter];
   const dialog = useRef<HTMLDialogElement>(null);
-  const close = useRef(onClose);
-  useEffect(() => { close.current = onClose; }, [onClose]);
   useEffect(() => {
     const element = dialog.current!;
     const focusBefore = document.activeElement;
@@ -21,22 +19,21 @@ export default function GuardianIntro({ chapter, reduced, onClose, onSoundEffect
     const stopRise = onSoundEffect(reduced ? 'guardian-reveal' : 'guardian-rise');
     let stopReveal: ReturnType<PlaySound>;
     const reveal = reduced ? null : setTimeout(() => { stopReveal = onSoundEffect('guardian-reveal'); }, scene.reveal);
-    const finish = reduced ? null : setTimeout(() => close.current(), scene.duration);
     return () => {
       if (reveal) clearTimeout(reveal);
-      if (finish) clearTimeout(finish);
       if (typeof stopRise === 'function') stopRise();
       if (typeof stopReveal === 'function') stopReveal();
       element.close();
       if (focusBefore instanceof HTMLElement && focusBefore.isConnected) focusBefore.focus();
     };
-  }, [chapter, reduced, onSoundEffect, scene.duration, scene.reveal]);
-  return <dialog ref={dialog} className={`guardian-intro intro-${scene.theme} ${reduced ? 'intro-reduced' : ''}`} style={{ '--intro-duration': `${scene.duration}ms`, '--art-ratio': GUARDIAN_ART[chapter].width / GUARDIAN_ART[chapter].height } as CSSProperties} aria-labelledby="guardian-intro-title"
+  }, [chapter, reduced, onSoundEffect, scene.reveal]);
+  return <dialog ref={dialog} className={`guardian-intro intro-${scene.theme} ${reduced ? 'intro-reduced' : ''}`} style={{ '--intro-duration': `${scene.duration}ms`, '--art-ratio': GUARDIAN_ART[chapter].width / GUARDIAN_ART[chapter].height } as CSSProperties} aria-labelledby="guardian-intro-title" aria-describedby="guardian-intro-dismiss"
+    onClick={onClose}
     onCancel={event => { event.preventDefault(); onClose(); }}>
     <div className="intro-frame">
       <div className="intro-backdrop" aria-hidden="true">
         {chapter === 0 && <div className="intro-distant-fort"><i /><i /><i /><i /><i /></div>}
-        {chapter === 1 && <><div className="intro-moon" /><div className="intro-flare" />{Array.from({ length: 9 }, (_, i) => <i className="intro-meteor" key={i} style={{ left: `${8 + i * 11}%`, animationDelay: `${i * .12}s` }} />)}</>}
+        {chapter === 1 && <><div className="intro-moon" /><div className="intro-flare" />{Array.from({ length: 9 }, (_, i) => <i className="intro-meteor" key={i} style={{ left: `${8 + i * 11}%`, '--effect-delay': `${i * .12}s` } as CSSProperties} />)}</>}
         {chapter === 2 && <div className="intro-clock"><div className="intro-clock-hand" /><div className="intro-clock-hand short" />{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ transform: `rotate(${i * 30}deg)` }} />)}</div>}
         {chapter === 3 && <div className="intro-cathedral" />}
         {chapter === 4 && <><div className="intro-rift" /><div className="intro-scan" /><div className="intro-orbit" /></>}
@@ -55,10 +52,11 @@ export default function GuardianIntro({ chapter, reduced, onClose, onSoundEffect
       <div className="intro-cue" aria-hidden="true">{scene.cue}</div>
       <div className="intro-clouds intro-clouds-far" aria-hidden="true"><i /><i /><i /></div>
       <div className="intro-clouds intro-clouds-near" aria-hidden="true"><i /><i /><i /></div>
-      <div className="intro-embers" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ left: `${8 + (i * 29) % 85}%`, animationDelay: `${i * .09}s` }} />)}</div>
+      <div className="intro-embers" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ left: `${8 + (i * 29) % 85}%`, '--effect-delay': `${i * .09}s` } as CSSProperties} />)}</div>
       <div className="intro-letterbox top" aria-hidden="true" /><div className="intro-letterbox bottom" aria-hidden="true" />
       <span className="intro-location">{scene.location}{preview ? ' · 预览' : ''}</span>
-      <button autoFocus className="intro-skip" onClick={onClose}>{reduced ? '返回地图' : '跳过演出'} <span aria-hidden="true">›</span></button>
+      <button autoFocus className="intro-skip">关闭演出 <span aria-hidden="true">›</span></button>
+      <p className="intro-dismiss" id="guardian-intro-dismiss">点击任意位置关闭 · Esc 返回</p>
       <div className="intro-title">
         <span>{scene.english}</span>
         <h2 id="guardian-intro-title">{GUARDIANS[chapter].name}</h2>
