@@ -148,17 +148,18 @@ test('首领演出跳过可取消本段音效并恢复音乐，静音时不会�
   assert.equal(context.sources.length, mutedCount);
 });
 
-test('七首指定曲目对应章节，第4/9/14/19格切关底曲，未指定音乐保留', () => {
-  const expected = [['堕天せし者', '究極幻想'], [null, 'Answers'], ['ローカス', 'ライズ'], ['闘争', '逆襲の咆哮'], [null, null]];
+test('十首指定曲目覆盖五章，第4/9/14/19/24格切关底曲', () => {
+  const expected = [['堕天せし者', '究極幻想'], ['雷鸣', 'Answers'], ['ローカス', 'ライズ'], ['闘争', '逆襲の咆哮'], ['エスケープ', '天より降りし力 (Concert Version)']];
   for (let chapter = 0; chapter < 5; chapter++) {
     for (let local = 1; local <= 5; local++) {
       const scene = musicScene(chapter, chapter * 5 + local), name = expected[chapter][local >= 4 ? 1 : 0];
-      if (name) assert(musicName(scene).includes(name));
-      else { assert.equal(recordedTrack(scene), null); assert.equal(musicName(scene), THEMES[chapter].name); }
+      assert(recordedTrack(scene), '所有章节和阶段均使用指定录音');
+      assert(musicName(scene).includes(name));
     }
   }
   const files = RECORDED_TRACKS.flatMap(t => [t.calm, t.intense]).filter(Boolean);
-  assert.equal(files.length, 7);
+  assert.equal(files.length, 10);
+  assert.equal(new Set(files.map(file => file.src)).size, 10);
   for (const file of files) assert(statSync(new URL('../public'+file.src, import.meta.url)).size > 100_000);
 });
 
