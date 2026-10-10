@@ -4,7 +4,8 @@ import { CHAPTERS, CHAPTER_TITLES, GUARDIANS, REWARD_STAGES, chapterFor, complet
 import PixelWorld from "./PixelWorld";
 import ChapterCelebration from "./ChapterCelebration";
 import Modal from "./Modal";
-import { musicScene, THEMES, type MusicScene, type PlaySound } from "../lib/adventure-score";
+import { musicScene, type MusicScene, type PlaySound } from "../lib/adventure-score";
+import { musicName } from "../lib/adventure-tracks";
 import GuardianIntro from "./GuardianIntro";
 import { guardianAtGate } from "../lib/guardian-intro";
 
@@ -43,7 +44,7 @@ export default function AdminMapPreview({ count, onSoundScene, onSoundEffect, re
         <button className="text-button" onClick={() => { setNode(Math.max(1, Math.min(25, count))); setCelebration(null); setGuardianIntro(null); }}>回到实际位置</button>
       </div>
       <p className="preview-position" role="status">预览位置：第 {node} 格 · {GUARDIANS[chapter].name}镇守　/　实际进度：{count}/25</p>
-      <p className="small-print">配乐预览：{THEMES[chapter].name} · {soundScene.intense ? '激昂乐章' : '舒缓乐章'}。开启顶部声音后，移动到第 4 格即可试听转场。</p>
+      <p className="small-print">配乐预览：{musicName(soundScene)} · {soundScene.intense ? '关底曲' : '冒险曲'}。开启顶部声音后，移动到本章第 4 格即可试听转场。</p>
       <PixelWorld key={node} chapter={chapter} count={count} artworks={[]} rewardNodes={REWARD_STAGES.map(r => r.node)}
         previewNode={node} titles={CHAPTER_TITLES.slice(0, Math.floor(node / 5))} cosmetics={cosmetics} moving={moving} onNode={moveTo} onHover={() => {}} onLeave={() => {}}
         onGuardianReplay={() => setGuardianIntro(chapter)} />

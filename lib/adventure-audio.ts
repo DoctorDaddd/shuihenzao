@@ -1,4 +1,5 @@
 import { createScore, effectScore, type MusicScene, type Note, type SoundEffect, type Voice } from './adventure-score.ts';
+import { recordedTrack } from './adventure-tracks.ts';
 
 const noiseBuffers = new WeakMap<BaseAudioContext, AudioBuffer>();
 const patches: Partial<Record<Voice, number[]>> = {
@@ -60,9 +61,12 @@ export function scheduleNote(context: BaseAudioContext, destination: AudioNode, 
   return sources;
 }
 
-type AudioStatus = 'off' | 'ready' | 'playing' | 'paused' | 'error';
+type AudioStatus = 'off' | 'ready' | 'loading' | 'playing' | 'paused' | 'error';
 type AudioSnapshot = { enabled: boolean; musicVolume: number; effectsVolume: number; status: AudioStatus; message: string; scene: MusicScene };
-type Track = { gain: GainNode; score: ReturnType<typeof createScore>; start: number; index: number; cycle: number; sources: Set<AudioScheduledSourceNode>; cleanup?: ReturnType<typeof setTimeout> };
+type TrackBase = { gain: GainNode; cleanup?: ReturnType<typeof setTimeout> };
+type SynthTrack = TrackBase & { kind: 'score'; score: ReturnType<typeof createScore>; start: number; index: number; cycle: number; sources: Set<AudioScheduledSourceNode> };
+type FileTrack = TrackBase & { kind: 'file'; src: string; media: HTMLAudioElement; source: MediaElementAudioSourceNode; onError: () => void };
+type Track = SynthTrack | FileTrack;
 export class AdventureAudio {
   private context: AudioContext | null = null;
   private music: GainNode | null = null;
@@ -73,10 +77,14 @@ export class AdventureAudio {
   private timer: ReturnType<typeof setInterval> | null = null;
   private hidden = false;
   private pausing: Promise<void> | null = null;
+  private pausedFile: { src: string; time: number } | null = null;
   private listeners = new Set<() => void>();
   private snapshot: AudioSnapshot = { enabled: false, musicVolume: 35, effectsVolume: 60, status: 'off', message: '', scene: { chapter: 0, intense: false } };
   private createContext: () => AudioContext;
-  constructor(createContext: () => AudioContext = () => new AudioContext()) { this.createContext = createContext; }
+  private createMedia: () => HTMLAudioElement;
+  constructor(createContext: () => AudioContext = () => new AudioContext(), createMedia: () => HTMLAudioElement = () => new Audio()) {
+    this.createContext = createContext; this.createMedia = createMedia;
+  }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   getSnapshot = () => this.snapshot;
   private update(values: Partial<AudioSnapshot>) { this.snapshot = { ...this.snapshot, ...values }; this.listeners.forEach(listener => listener()); }
@@ -135,12 +143,14 @@ export class AdventureAudio {
   setScene = (scene: MusicScene) => {
     if (scene.chapter === this.snapshot.scene.chapter && scene.intense === this.snapshot.scene.intense) return;
     this.update({ scene });
+    this.pausedFile = null;
     if (this.current) this.retire(this.current, .8);
     this.current = null;
     if (this.context?.state === 'running' && this.snapshot.enabled && !this.hidden) this.startMusic();
   };
   setHidden(hidden: boolean) { this.hidden = hidden; if (hidden) this.pause(); else if (this.context && this.snapshot.enabled) void this.unlock(); }
   private pause() {
+    if (this.current?.kind === 'file') this.pausedFile = { src: this.current.src, time: this.current.media.currentTime };
     this.stopMusic();
     for (const source of this.effectSources) source.stop();
     this.effectSources.clear();
@@ -151,9 +161,33 @@ export class AdventureAudio {
   }
   private startMusic() {
     if (!this.context || !this.music || this.current) return;
+    const recording = recordedTrack(this.snapshot.scene);
+    if (recording) {
+      if (this.timer) clearInterval(this.timer);
+      this.timer = null;
+      const gain = this.context.createGain(), media = this.createMedia();
+      gain.gain.value = 0; gain.connect(this.music);
+      media.preload = 'none'; media.loop = true; media.src = recording.src;
+      if (this.pausedFile?.src === recording.src) media.currentTime = this.pausedFile.time;
+      const source = this.context.createMediaElementSource(media);
+      source.connect(gain);
+      const track: FileTrack = { kind: 'file', src: recording.src, media, source, gain, onError: () => {
+        if (this.current === track) this.fail(new Error(`BGM load failed (${media.error?.code ?? 'unknown'}): ${recording.src}`));
+      } };
+      media.addEventListener('error', track.onError);
+      this.current = track; this.tracks.add(track);
+      this.update({ status: 'loading', message: '' });
+      void media.play().then(() => {
+        if (this.current !== track || !this.context || !this.snapshot.enabled || this.hidden) return;
+        const now = this.context.currentTime;
+        gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(1, now + 1.2);
+        this.update({ status: 'playing', message: '' });
+      }).catch(error => { if (this.current === track) this.fail(error); });
+      return;
+    }
     const gain = this.context.createGain(), start = this.context.currentTime + .035;
     gain.gain.setValueAtTime(0, start); gain.gain.linearRampToValueAtTime(1, start + 1.2); gain.connect(this.music);
-    this.current = { gain, score: createScore(this.snapshot.scene), start, index: 0, cycle: 0, sources: new Set() };
+    this.current = { kind: 'score', gain, score: createScore(this.snapshot.scene), start, index: 0, cycle: 0, sources: new Set() };
     this.tracks.add(this.current);
     this.update({ status: 'playing', message: '' });
     this.tick();
@@ -161,7 +195,7 @@ export class AdventureAudio {
   }
   private tick = () => {
     const context = this.context, track = this.current;
-    if (!context || context.state !== 'running' || !track) return;
+    if (!context || context.state !== 'running' || !track || track.kind !== 'score') return;
     const seconds = 60 / track.score.bpm;
     // If the main thread stalled, restart a phrase instead of playing a backlog.
     if (track.start + (track.cycle * track.score.beats + track.score.notes[track.index].beat) * seconds < context.currentTime - .25) {
@@ -190,8 +224,15 @@ export class AdventureAudio {
       track.gain.gain.setTargetAtTime(0, now, fade / 4);
       track.cleanup = setTimeout(() => this.retire(track, 0), fade * 1000);
     } else {
-      for (const source of track.sources) source.stop();
-      track.sources.clear(); track.gain.disconnect(); this.tracks.delete(track);
+      if (track.kind === 'file') {
+        track.media.removeEventListener('error', track.onError);
+        track.media.pause(); track.media.removeAttribute('src'); track.media.load();
+        track.source.disconnect();
+      } else {
+        for (const source of track.sources) source.stop();
+        track.sources.clear();
+      }
+      track.gain.disconnect(); this.tracks.delete(track);
     }
   }
   private stopMusic() {

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { musicScene, createScore, THEMES, effectScore } from '../lib/adventure-score.ts';
 import { AdventureAudio } from '../lib/adventure-audio.ts';
+import { musicName, recordedTrack, RECORDED_TRACKS } from '../lib/adventure-tracks.ts';
+import { statSync } from 'node:fs';
 
 test('每章第4格才转为激昂，浏览未来地图和管理员回退独立计算', () => {
   for (let chapter = 0; chapter < 5; chapter++) {
@@ -55,6 +57,14 @@ class Node extends EventTarget {
   start(time) { assert(Number.isFinite(time) && time >= 0); this.started = true; }
   stop(time = 0) { this.stopTime = time; if (time === 0) this.dispatchEvent(new Event('ended')); }
 }
+class Media extends EventTarget {
+  src = ''; preload = ''; loop = false; currentTime = 0; paused = true; error = null;
+  playResult = null; released = false;
+  play() { this.paused = false; return this.playResult ?? Promise.resolve(); }
+  pause() { this.paused = true; }
+  removeAttribute(name) { if (name === 'src') this.src = ''; }
+  load() { this.released = true; }
+}
 class Context extends EventTarget {
   state = 'suspended'; currentTime = 0; sampleRate = 8000; destination = new Node(); sources = []; gains = [];
   createGain() { const node = new Node(); this.gains.push(node); return node; }
@@ -64,6 +74,7 @@ class Context extends EventTarget {
   createBuffer(_channels, length) { return { getChannelData: () => new Float32Array(length) }; }
   createOscillator() { const node = new Node(); this.sources.push(node); return node; }
   createBufferSource() { return this.createOscillator(); }
+  createMediaElementSource() { return new Node(); }
   async resume() { this.state = 'running'; this.dispatchEvent(new Event('statechange')); }
   async suspend() { await Promise.resolve(); this.state = 'suspended'; this.dispatchEvent(new Event('statechange')); }
   async close() { this.state = 'closed'; }
@@ -71,7 +82,7 @@ class Context extends EventTarget {
 
 test('静音默认不创建音频上下文；手势解锁后音乐和音效复用同一个上下文', async t => {
   let created = 0;
-  const context = new Context(), engine = new AdventureAudio(() => { created++; return context; });
+  const context = new Context(), engine = new AdventureAudio(() => { created++; return context; }, () => new Media());
   t.after(() => engine.dispose());
   engine.setHidden(false); engine.play('chest'); await engine.unlock();
   assert.equal(created, 0);
@@ -93,7 +104,7 @@ test('静音默认不创建音频上下文；手势解锁后音乐和音效复�
 });
 
 test('快速静音再开启、后台暂停恢复、切图淡化和清理不会遗留多首音乐', async t => {
-  const context = new Context(), engine = new AdventureAudio(() => context);
+  const context = new Context(), engine = new AdventureAudio(() => context, () => new Media());
   t.after(() => engine.dispose());
   engine.setEnabled(true); await engine.unlock();
   engine.setEnabled(false); engine.setEnabled(true); await engine.unlock();
@@ -115,7 +126,7 @@ test('快速静音再开启、后台暂停恢复、切图淡化和清理不会�
 });
 
 test('首领演出跳过可取消本段音效并恢复音乐，静音时不会创建演出音源', async t => {
-  const context = new Context(), engine = new AdventureAudio(() => context);
+  const context = new Context(), engine = new AdventureAudio(() => context, () => new Media());
   t.after(() => engine.dispose());
   engine.configure(true, 35, 60);
   await engine.unlock();
@@ -135,4 +146,89 @@ test('首领演出跳过可取消本段音效并恢复音乐，静音时不会�
   const mutedCount = context.sources.length;
   engine.play('guardian-rise');
   assert.equal(context.sources.length, mutedCount);
+});
+
+test('七首指定曲目对应章节，第4/9/14/19格切关底曲，未指定音乐保留', () => {
+  const expected = [['堕天せし者', '究極幻想'], [null, 'Answers'], ['ローカス', 'ライズ'], ['闘争', '逆襲の咆哮'], [null, null]];
+  for (let chapter = 0; chapter < 5; chapter++) {
+    for (let local = 1; local <= 5; local++) {
+      const scene = musicScene(chapter, chapter * 5 + local), name = expected[chapter][local >= 4 ? 1 : 0];
+      if (name) assert(musicName(scene).includes(name));
+      else { assert.equal(recordedTrack(scene), null); assert.equal(musicName(scene), THEMES[chapter].name); }
+    }
+  }
+  const files = RECORDED_TRACKS.flatMap(t => [t.calm, t.intense]).filter(Boolean);
+  assert.equal(files.length, 7);
+  for (const file of files) assert(statSync(new URL('../public'+file.src, import.meta.url)).size > 100_000);
+});
+
+test('录音按需播放并循环，静音/后台立即停止请求，恢复播放位置且切图没有残留', async t => {
+  const context = new Context(), media = [];
+  const engine = new AdventureAudio(() => context, () => { const m = new Media(); media.push(m); return m; });
+  t.after(() => engine.dispose());
+  engine.configure(true, 35, 60); engine.setScene(musicScene(2, 13));
+  assert.equal(media.length, 0, '首次真实手势前不创建/下载任何录音');
+  await engine.unlock();
+  assert.equal(media.length, 1); assert.equal(media[0].loop, true); assert.equal(media[0].preload, 'none');
+  assert(media[0].src.includes('locus.')); assert.equal(context.sources.length, 0, '录音不能叠加原合成旋律');
+  media[0].currentTime = 42;
+  engine.setHidden(true); await Promise.resolve();
+  assert(media[0].paused && media[0].released); assert.equal(media[0].src, '');
+  engine.setHidden(false); await engine.unlock();
+  assert.equal(media[1].currentTime, 42); assert.equal(engine.getSnapshot().status, 'playing');
+  engine.setScene(musicScene(2, 14)); await Promise.resolve();
+  assert(media[2].src.includes('rise.')); assert.equal(media[2].currentTime, 0);
+  engine.setScene(musicScene(1, 9)); await Promise.resolve();
+  assert(media[3].src.includes('answers.')); assert(media[1].paused && media[1].released);
+  assert.equal(engine.tracks.size, 2, '最多当前轨和一条淡出轨');
+  engine.setEnabled(false);
+  assert(media.every(m => m.paused && m.released)); assert.equal(engine.tracks.size, 0);
+});
+
+test('旧曲延迟播放/拒绝不能覆盖新曲状态；资源错误可见且可重试', async t => {
+  const context = new Context(), media = [];
+  let rejectOld;
+  const engine = new AdventureAudio(() => context, () => {
+    const m = new Media();
+    if (!media.length) m.playResult = new Promise((_resolve, reject) => { rejectOld = reject; });
+    media.push(m); return m;
+  });
+  t.after(() => engine.dispose());
+  engine.configure(true, 35, 60); await engine.unlock();
+  assert.equal(engine.getSnapshot().status, 'loading');
+  engine.setScene(musicScene(0, 4)); await Promise.resolve();
+  rejectOld(new Error('play interrupted by scene change'));
+  await Promise.resolve(); await Promise.resolve();
+  assert.equal(engine.getSnapshot().status, 'playing');
+  const errors = t.mock.method(console, 'error', () => {});
+  media[1].error = { code: 4 }; media[1].dispatchEvent(new Event('error'));
+  assert.equal(engine.getSnapshot().status, 'error'); assert(engine.getSnapshot().message.includes('重试'));
+  assert.equal(errors.mock.callCount(), 1); assert.equal(engine.tracks.size, 0);
+  await engine.unlock();
+  assert.equal(engine.getSnapshot().status, 'playing'); assert.equal(media.length, 3);
+});
+
+test('浏览器拒绝录音播放时报告失败，下一次手势可重试；加载中静音不会漏播', async t => {
+  const context = new Context(), media = [];
+  const errors = t.mock.method(console, 'error', () => {});
+  const engine = new AdventureAudio(() => context, () => {
+    const m = new Media();
+    if (!media.length) m.playResult = Promise.reject(new Error('NotAllowedError'));
+    media.push(m); return m;
+  });
+  t.after(() => engine.dispose());
+  engine.configure(true, 35, 60); await engine.unlock(); await Promise.resolve();
+  assert.equal(engine.getSnapshot().status, 'error'); assert.equal(errors.mock.callCount(), 1);
+  assert(media[0].released);
+  await engine.unlock();
+  assert.equal(engine.getSnapshot().status, 'playing');
+  let resolvePlay;
+  engine.setEnabled(false); await Promise.resolve();
+  engine.createMedia = () => {
+    const m = new Media(); m.playResult = new Promise(resolve => { resolvePlay = resolve; }); media.push(m); return m;
+  };
+  engine.setEnabled(true); await engine.unlock();
+  assert.equal(engine.getSnapshot().status, 'loading');
+  engine.setEnabled(false); resolvePlay(); await Promise.resolve();
+  assert.equal(engine.getSnapshot().status, 'off'); assert(media[2].paused && media[2].released);
 });

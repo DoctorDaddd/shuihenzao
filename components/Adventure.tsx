@@ -36,7 +36,8 @@ import HeroTitles from "./HeroTitles";
 import GuardianIntro from "./GuardianIntro";
 import { guardianAtGate, shouldIntroduceGuardian } from "../lib/guardian-intro";
 import { useAdventureAudio } from "../src/useAdventureAudio";
-import { musicScene, THEMES } from "../lib/adventure-score";
+import { musicScene } from "../lib/adventure-score";
+import { musicName } from "../lib/adventure-tracks";
 import { getState, questApi, logout as signOut, localPreview } from "../src/api";
 import {
   CHAPTERS,
@@ -96,6 +97,7 @@ export default function Adventure() {
     [reduced, setReduced] = useState(false),
     [toast, setToast] = useState("");
   const audio = useAdventureAudio();
+  const soundActive = audio.enabled && (audio.status === 'playing' || audio.status === 'loading');
   const { setScene: setSoundScene, play: playSound } = audio;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
@@ -345,14 +347,14 @@ export default function Adventure() {
         </span>
         <div className="header-actions">
           <button className="sound-toggle" data-sound-control
-            aria-label={audio.enabled && audio.status === 'playing' ? '静音' : '开启声音'}
-            aria-pressed={audio.enabled && audio.status === 'playing'}
+            aria-label={soundActive ? '静音' : '开启声音'}
+            aria-pressed={soundActive}
             onClick={() => {
-              if (audio.enabled && audio.status === 'playing') audio.setEnabled(false);
+              if (soundActive) audio.setEnabled(false);
               else audio.setEnabled(true);
             }}>
-            {audio.enabled && audio.status === 'playing' ? <Volume2 size={17} /> : <VolumeX size={17} />}
-            <span>{audio.enabled && audio.status === 'playing' ? '静音' : '声音'}</span>
+            {soundActive ? <Volume2 size={17} /> : <VolumeX size={17} />}
+            <span>{soundActive ? '静音' : '声音'}</span>
           </button>
           <button
             className="icon-button settings-button"
@@ -910,7 +912,7 @@ export default function Adventure() {
                 {audio.enabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
                 冒险音乐与音效
               </h3>
-              <p>五张地图，五段旋律；抵达每章第 4 格转入激昂乐章。</p>
+              <p>随地图播放冒险曲；抵达每章第 4 格切换关底曲。</p>
             </div>
             <input
               type="checkbox"
@@ -922,8 +924,8 @@ export default function Adventure() {
             />
           </div>
           <p className="audio-now-playing" role="status">
-            {audio.status === 'playing' ? '正在播放' : audio.enabled ? '声音已开启，等待首次点击或按键' : '声音已关闭'}
-            {' · '}{THEMES[audio.scene.chapter].name} · {audio.scene.intense ? '激昂乐章' : '舒缓乐章'}
+            {audio.status === 'playing' ? '正在播放' : audio.status === 'loading' ? '正在加载音乐' : audio.status === 'error' ? '声音播放失败' : audio.status === 'paused' ? '声音已暂停' : audio.enabled ? '声音已开启，等待首次点击或按键' : '声音已关闭'}
+            {' · '}{musicName(audio.scene)} · {audio.scene.intense ? '关底曲' : '冒险曲'}
           </p>
           {audio.message && <p className="error" role="alert">{audio.message}</p>}
           <div className="audio-volumes">
