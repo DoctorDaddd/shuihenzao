@@ -83,6 +83,8 @@ export default function Adventure() {
       art: Artwork;
       x: number;
       y: number;
+      width: number;
+      height: number;
     } | null>(null),
     [compareIds, setCompareIds] = useState<string[]>([]);
   const [settings, setSettings] = useState(false),
@@ -105,6 +107,10 @@ export default function Adventure() {
     guardianSeen = useRef(new Set<number>()),
     mounted = useRef(false),
     refreshVersion = useRef(0);
+  const leave = useCallback(() => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    setPreview(null);
+  }, []);
   const data = state ?? emptyState,
     count = data.artworks.length,
     titles = earnedTitles(data.rewards),
@@ -159,6 +165,19 @@ export default function Adventure() {
     document.documentElement.dataset.reduced = String(reduced);
   }, [reduced]);
   useEffect(() => {
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") leave(); };
+    window.addEventListener("scroll", leave, { capture: true, passive: true });
+    window.addEventListener("resize", leave);
+    window.addEventListener("blur", leave);
+    window.addEventListener("keydown", escape);
+    return () => {
+      window.removeEventListener("scroll", leave, true);
+      window.removeEventListener("resize", leave);
+      window.removeEventListener("blur", leave);
+      window.removeEventListener("keydown", escape);
+    };
+  }, [leave]);
+  useEffect(() => {
     if (tab !== "admin" || state?.role !== "admin") setSoundScene(musicScene(chapter, count));
   }, [chapter, count, tab, state?.role, setSoundScene]);
   function notify(text: string) {
@@ -190,7 +209,7 @@ export default function Adventure() {
     if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
     setMoving(false);
     setGuardianIntro(null);
-    setPreview(null);
+    leave();
     setTab(value);
     history.replaceState(null, "", value === "admin" ? "/admin" : "/");
     setError("");
@@ -209,24 +228,26 @@ export default function Adventure() {
     setUpload({});
   }
   function hover(art: Artwork, rect: DOMRect) {
+    leave();
     if (!matchMedia("(hover: hover)").matches) return;
-    if (previewTimer.current) clearTimeout(previewTimer.current);
-    previewTimer.current = setTimeout(
-      () =>
-        setPreview({
-          art,
-          x: Math.min(
-            Math.max(12, rect.left + rect.width / 2 - 160),
-            window.innerWidth - 332,
-          ),
-          y: Math.max(12, Math.min(rect.top - 260, window.innerHeight - 280)),
-        }),
-      280,
-    );
-  }
-  function leave() {
-    if (previewTimer.current) clearTimeout(previewTimer.current);
-    setPreview(null);
+    previewTimer.current = setTimeout(() => {
+      const margin = 16;
+      const width = Math.min(760, window.innerWidth - margin * 2);
+      const height = Math.min(820, window.innerHeight * 0.82);
+      // Prefer space beside the artwork; otherwise use the opposite screen edge.
+      const x = rect.right + margin + width <= window.innerWidth - margin
+        ? rect.right + margin
+        : rect.left - margin - width >= margin
+          ? rect.left - margin - width
+          : rect.left + rect.width / 2 < window.innerWidth / 2
+            ? window.innerWidth - width - margin
+            : margin;
+      const y = Math.max(margin, Math.min(
+        rect.top + rect.height / 2 - height / 2,
+        window.innerHeight - height - margin,
+      ));
+      setPreview({ art, x, y, width, height });
+    }, 280);
   }
   async function saved(isNew: boolean) {
     const updated = await refresh();
@@ -843,8 +864,8 @@ export default function Adventure() {
       </footer>
       {guardianIntro !== null && <GuardianIntro chapter={guardianIntro} cosmetics={cosmetics} reduced={reduced} onClose={() => setGuardianIntro(null)} onSoundEffect={playSound} />}
       {preview && (
-        <div className="art-hover" style={{ left: preview.x, top: preview.y }}>
-          <img src={preview.art.thumbnailUrl || preview.art.imageUrl} alt={preview.art.title} decoding="async" />
+        <div className="art-hover" style={{ left: preview.x, top: preview.y, width: preview.width, height: preview.height }}>
+          <img src={preview.art.imageUrl} alt={preview.art.title} decoding="async" />
           <div>
             <b>{preview.art.title}</b>
             <span>{preview.art.created_date}</span>
