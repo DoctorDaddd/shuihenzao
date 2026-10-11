@@ -508,9 +508,13 @@ export default function Adventure() {
                           : `第 ${String(count + 1).padStart(2, "0")} 次冒险，准备出发。`}
                       </h2>
                       <p>
-                        {count === 25
-                          ? "作品和回忆会一直留在这里，欢迎随时回来。"
-                          : "带上一幅新作品，让女勇者再向前走一步。"}
+                        {count === 25 ? (
+                          "作品和回忆会一直留在这里，欢迎随时回来。"
+                        ) : (
+                          <>
+                            积攒绘画能量，释放<strong>天星棱光</strong> ！
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
