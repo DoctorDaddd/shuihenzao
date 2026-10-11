@@ -660,11 +660,7 @@ export default function Adventure() {
               </section>
               <section className="little-note">
                 <h2>旅途寄语</h2>
-                <blockquote>
-                  “每一张画都值得被珍惜。
-                  <br />
-                  你正在创造的，远不止画面。”
-                </blockquote>
+                <blockquote>“我去，是画画高手”</blockquote>
                 <span>— 写给正在冒险的你</span>
               </section>
             </div>
