@@ -3,31 +3,46 @@ import type { Companion } from "../lib/quest";
 
 const COMPANION_NAMES = { ruby: "红宝石兽", topaz: "黄宝石兽", sapphire: "蓝宝石兽" };
 
-// Original pixel silhouette inspired by FFXIV Carbuncles: long ears, forehead gem and a split tail.
+// Original 48x36 pixel interpretation: three separate plumes, long ears, a red forehead gem and four paws.
 export function Carbuncle({ kind }: { kind: Companion }) {
   return <svg className={`carbuncle carbuncle-${kind}`} viewBox="0 0 48 36" role="img"
     aria-label={`跟随勇者的${COMPANION_NAMES[kind]}`} shapeRendering="crispEdges">
     <path d="M7 32H40V34H7Z" fill="var(--familiar-shadow)" />
-    <g className="carbuncle-tail">
-      <path d="M26 25H32V21H34V16H38V10H41V6H45V16H43V22H39V27H33V29H26Z" fill="var(--fur-shade)" />
-      <path d="M29 25H35V23H39V18H43V12H46V20H44V25H39V29H32V30H27Z" fill="var(--fur)" />
-      <path d="M33 24H38V19H40V15H42V19H40V24H37V27H32Z" fill="var(--fur-light)" />
-      <path d="M38 12H40V8H42V5H44V11H42V16H40V20H38Z" fill="var(--fur)" />
-    </g>
     <g className="carbuncle-body">
-      <path d="M9 17H24V20H31V23H34V29H31V33H25V30H18V33H12V30H8V25H5V21H9Z" fill="var(--fur-shade)" />
-      <path d="M13 18H23V21H29V23H31V29H24V28H18V30H12V27H9V22H13Z" fill="var(--fur)" />
-      <path d="M11 20H18V23H21V27H19V30H14V29H12V26H10V23H8V21Z" fill="var(--familiar-cream)" />
-      <path d="M5 2H8V4H11V7H13V13H18V8H21V4H24V2H27V9H25V14H23V18H22V22H18V24H10V22H6V19H3V16H5V13H7V10H5Z" fill="var(--fur-shade)" />
-      <path d="M6 3H8V6H10V9H12V14H19V10H21V7H24V4H25V9H23V14H21V19H19V22H10V20H7V18H5V16H9V12H8V8H6Z" fill="var(--fur)" />
-      <path d="M8 6H9V9H11V13H10V11H9V9H8ZM23 7H24V10H22V14H20V13H21V10H23Z" fill="var(--fur-light)" />
-      <path d="M8 17H11V20H9V19H7V18H5V17ZM12 21H18V23H12Z" fill="var(--familiar-cream)" />
-      <path d="M9 15H11V18H9ZM18 15H20V18H18ZM5 18H7V19H5Z" fill="var(--familiar-eye)" />
+      {/* Keep gaps between all three tips, including at the smallest map size. */}
+      <g className="carbuncle-tail carbuncle-tail-high">
+        <path d="M27 28V21H29V16H30V12H29V6H31V3H34V2H36V6H37V12H35V18H33V23H31V28Z" fill="var(--fur-shade)" />
+        <path d="M29 25V21H31V16H32V11H31V7H32V4H34V7H35V12H33V18H31V23H30V25Z" fill="var(--fur)" />
+        <path d="M31 7V5H33V10H34V12H32V16H31V12H32V9H31Z" fill="var(--fur-light)" />
+      </g>
+      <g className="carbuncle-tail carbuncle-tail-middle">
+        <path d="M28 28V25H32V21H35V17H38V13H41V10H45V12H47V16H45V19H41V22H37V25H33V29Z" fill="var(--fur-shade)" />
+        <path d="M31 26V24H34V21H37V17H40V14H42V12H44V14H45V16H43V18H40V21H36V24H33V27Z" fill="var(--fur)" />
+        <path d="M37 20V18H39V15H42V13H44V15H42V17H40V19H38V20Z" fill="var(--fur-light)" />
+      </g>
+      <g className="carbuncle-tail carbuncle-tail-low">
+        <path d="M28 28H34V27H38V25H41V24H45V25H47V28H45V30H41V32H35V31H29Z" fill="var(--fur-shade)" />
+        <path d="M30 29H35V28H39V27H42V26H44V27H45V28H42V30H36V29H32V30H30Z" fill="var(--fur)" />
+        <path d="M36 28H39V27H42V26H44V27H42V28H39V29H36Z" fill="var(--fur-light)" />
+      </g>
+      {/* Far paws sit behind the torso; near paws have their own toe clusters. */}
+      <path d="M16 25H20V30H19V32H15V30H16ZM28 25H32V29H34V31H29V29H28Z" fill="var(--fur-shade)" />
+      <path d="M10 19H20V21H29V23H32V29H29V31H23V29H17V30H12V28H9V24H8V21H10Z" fill="var(--fur-shade)" />
+      <path d="M12 20H19V22H28V24H30V27H27V29H23V27H17V28H12V25H10V22H12Z" fill="var(--fur)" />
+      <path d="M18 22H25V23H28V25H24V24H19Z" fill="var(--fur-light)" />
+      <path d="M10 20H15V22H18V25H21V27H16V28H13V26H11V24H9V22H10Z" fill="var(--familiar-cream)" />
+      <path d="M11 26H15V30H14V33H9V31H11ZM25 27H29V31H28V33H23V31H25Z" fill="var(--fur-shade)" />
+      <path d="M12 27H14V31H11V32H10V31H12ZM26 28H28V31H25V32H24V31H26Z" fill="var(--fur-light)" />
+      {/* Long leaf-shaped ears, a short muzzle, and cheek tufts avoid a generic cat silhouette. */}
+      <path d="M4 2H7V4H10V7H12V12H17V9H19V6H22V3H26V8H24V12H22V16H23V19H21V22H16V24H10V22H6V20H3V17H5V14H7V12H6V9H4Z" fill="var(--fur-shade)" />
+      <path d="M5 3H7V6H10V9H11V13H18V10H20V8H23V5H24V8H22V12H20V16H21V19H19V21H16V22H11V20H7V18H5V16H8V13H9V11H7V8H5Z" fill="var(--fur)" />
+      <path d="M6 5H7V8H9V11H10V13H8V10H7V8H6ZM22 7H23V9H21V12H19V14H18V12H20V9H22Z" fill="var(--fur-light)" />
+      <path d="M6 18H10V20H15V19H18V21H16V22H10V21H7V20H5V19H6Z" fill="var(--familiar-cream)" />
+      <path d="M8 15H11V18H9V17H8ZM17 15H20V17H18V18H17ZM5 17H7V18H5Z" fill="var(--familiar-eye)" />
       <path d="M9 15H10V16H9ZM18 15H19V16H18Z" fill="var(--familiar-cream)" />
-      <path d="M14 11H16V12H17V15H16V17H14V15H13V12H14Z" fill="var(--familiar-gem-edge)" />
-      <path d="M14 12H16V15H14Z" fill="var(--familiar-gem)" />
-      <path d="M14 12H15V13H14Z" fill="var(--familiar-cream)" />
-      <path d="M12 29H16V32H11V31H12ZM26 29H30V32H25V31H26Z" fill="var(--fur-light)" />
+      <path className="carbuncle-gem" d="M13 10H15V11H16V14H15V16H13V14H12V11H13Z" fill="var(--familiar-gem-edge)" />
+      <path d="M13 11H15V14H13Z" fill="var(--familiar-gem)" />
+      <path d="M13 11H14V12H13Z" fill="var(--familiar-cream)" />
     </g>
   </svg>;
 }

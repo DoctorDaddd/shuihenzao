@@ -6,13 +6,16 @@
 .hero-party > .carbuncle { position: absolute; width: 72%; height: auto; bottom: 0; pointer-events: none; overflow: visible; image-rendering: pixelated; z-index: 2; }
 .carbuncle-ruby { --fur: var(--ruby-fur); --fur-shade: var(--ruby-shade); --fur-light: var(--ruby-light); left: -54%; }
 .carbuncle-topaz { --fur: var(--topaz-fur); --fur-shade: var(--topaz-shade); --fur-light: var(--topaz-light); right: -62%; transform: scaleX(-1); }
-.hero-party > .carbuncle-sapphire { --fur: var(--sapphire-fur); --fur-shade: var(--sapphire-shade); --fur-light: var(--sapphire-light); left: 14%; bottom: -17%; }
-.carbuncle-body { animation: familiar-breathe 3.6s steps(2) infinite; }
+.carbuncle-sapphire { --fur: var(--sapphire-fur); --fur-shade: var(--sapphire-shade); --fur-light: var(--sapphire-light); }
+.hero-party > .carbuncle-sapphire { left: 14%; bottom: -17%; }
+.carbuncle-body { animation: familiar-breathe 3.6s steps(1) infinite; }
 .carbuncle-topaz .carbuncle-body { animation-delay: -.9s; }
 .carbuncle-sapphire .carbuncle-body { animation-delay: -1.8s; }
-.carbuncle-tail { transform-origin: 29px 27px; animation: familiar-tail 4.8s steps(4) infinite; }
-.carbuncle-topaz .carbuncle-tail { animation-delay: -1.2s; }
-.carbuncle-sapphire .carbuncle-tail { animation-delay: -2.4s; }
+.carbuncle-tail { animation: familiar-tail 4.8s steps(1) infinite; animation-delay: calc(var(--familiar-phase, 0s) + var(--tail-phase, 0s)); }
+.carbuncle-tail-middle { --tail-phase: -.8s; }
+.carbuncle-tail-low { --tail-phase: -1.6s; }
+.carbuncle-topaz { --familiar-phase: -1.2s; }
+.carbuncle-sapphire { --familiar-phase: -2.4s; }
 .weapon-gear { fill: var(--weapon-gold); animation: painter-gear 16s linear infinite; }
 .weapon-gear-small { animation-duration: 12s; animation-direction: reverse; }
 .weapon-light { filter: drop-shadow(0 0 1px var(--weapon-ice)); }
@@ -34,7 +37,7 @@
 .firework i b { position: absolute; width: 4px; height: 4px; background: currentColor; opacity: 0; animation: firework-burst 4.8s var(--ease-out) var(--burst-delay) 3; box-shadow: 0 9px 0 currentColor; }
 .firework-trail { position: absolute; width: 2px; height: 24px; background: currentColor; opacity: 0; animation: firework-launch 4.8s ease-out var(--burst-delay) 3; }
 @keyframes familiar-breathe { 50% { transform: translateY(-1px); } }
-@keyframes familiar-tail { 50% { transform: rotate(-8deg); } }
+@keyframes familiar-tail { 50% { transform: translateY(-1px); } }
 @keyframes painter-gear { to { transform: rotate(360deg); } }
 @keyframes painter-glint { 50% { opacity: .35; } }
 @keyframes firework-launch { 0% { opacity: 0; transform: translateY(110px) scaleY(1); } 9% { opacity: .8; } 17% { opacity: 0; transform: translateY(0) scaleY(.2); } 100% { opacity: 0; } }
